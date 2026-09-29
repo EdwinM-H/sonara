@@ -48,6 +48,8 @@
                 <a href="{{ route('register') }}" class="text-purple-700 font-semibold hover:underline">Regístrate aquí</a>
                 ·
                 <a href="{{ route('voice-registration.index') }}" class="text-purple-700 font-semibold hover:underline">Registro por voz</a>
+                ·
+                <a href="{{ route('voice-login.index') }}" class="text-purple-700 font-semibold hover:underline">Login por voz</a>
             </p>
         </form>
 

@@ -20,6 +20,7 @@ class User extends Authenticatable
         'first_name',
         'last_name',
         'name',
+        'username',
         'email',
         'phone',
         'password',
@@ -28,6 +29,7 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
+        'voice_pin',
         'remember_token',
     ];
 
@@ -36,7 +38,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'voice_pin' => 'hashed',
         ];
+    }
+
+    public function hasVoicePin(): bool
+    {
+        return ! empty($this->voice_pin);
     }
 
     public function isAdmin(): bool

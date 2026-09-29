@@ -25,6 +25,7 @@
      data-nav-register="{{ route('register') }}"
      data-nav-login="{{ route('login') }}"
      data-nav-voice="{{ route('voice-registration.index') }}"
+     data-nav-voice-login="{{ route('voice-login.index') }}"
      data-nav-profile="{{ $voiceUser ? route('profile.edit') : '' }}"
      data-nav-notifications="{{ $voiceNotificationsRoute ?? '' }}"
      data-nav-panel="{{ $voicePanelRoute ?? '' }}"

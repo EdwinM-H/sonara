@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EntrepreneurController;
+use App\Http\Controllers\EntrepreneurVoiceController;
 use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\AIFlyerController;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'active', 'role:entrepreneur'])->prefix('emprendedor')->name('entrepreneur.')->group(function () {
 
     Route::get('/dashboard', [EntrepreneurController::class, 'dashboard'])->name('dashboard');
+    Route::post('/voz/comando', [EntrepreneurVoiceController::class, 'command'])->name('voice.command');
     Route::get('/perfil', [EntrepreneurController::class, 'profile'])->name('profile');
     Route::patch('/perfil', [EntrepreneurController::class, 'updateProfile'])->name('profile.update');
 

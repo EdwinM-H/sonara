@@ -14,7 +14,6 @@ use App\Models\User;
 use App\Models\VerificationDocument;
 use App\Notifications\RequestStatusNotification;
 use App\Services\AI\ImageGenerationService;
-use App\Services\Assistant\VoiceAssistantService;
 use App\Services\Verification\VerificationService;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -76,37 +75,6 @@ class FunctionalFixesTest extends TestCase
             'currency' => 'PEN',
             'region' => 'Cusco',
         ]);
-    }
-
-    /** El comando de voz "continuar" ya no debe guardarse como respuesta literal del campo actual. */
-    public function test_voice_continue_command_does_not_overwrite_field_data(): void
-    {
-        $service = new VoiceAssistantService('voice-test-'.uniqid());
-
-        $step = $service->start();
-        $this->assertSame('welcome', $step['state']);
-        $this->assertSame('first_name', $step['field']);
-
-        $step = $service->process('continuar');
-        $this->assertSame('question', $step['type']);
-        $this->assertSame('welcome', $step['state'], 'Debe permanecer en el mismo paso, no avanzar.');
-        $this->assertNotNull($step['message']);
-
-        $step = $service->process('Rosa Mamani');
-        $this->assertSame('first_name', $step['state']);
-        $this->assertSame(['first_name' => 'Rosa Mamani'], $service->data());
-    }
-
-    /** Los comandos "corregir" y "guardar" tampoco deben corromper el dato capturado. */
-    public function test_voice_fix_and_save_commands_do_not_corrupt_data(): void
-    {
-        $service = new VoiceAssistantService('voice-test-'.uniqid());
-        $service->start();
-        $service->process('corregir');
-        $step = $service->process('guardar');
-
-        $this->assertSame('welcome', $step['state']);
-        $this->assertArrayNotHasKey('first_name', $service->data());
     }
 
     /** Cambiar los plazos en Admin > Configuración debe afectar de verdad el cálculo de vencimientos. */

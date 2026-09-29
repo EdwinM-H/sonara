@@ -2,377 +2,270 @@
 
 namespace App\Services\Assistant;
 
+use App\Models\User;
+
 /**
- * Máquina de estados del Registro Autónomo por Voz.
+ * Máquina de estados del registro de emprendedor por voz.
  *
- * Cada estado define la pregunta a formular, cómo capturar la respuesta
- * y cuál es el siguiente estado. El progreso se almacena por sesión y
- * puede retomarse si el usuario abandona el proceso.
+ * Pregunta los seis campos uno por uno (nombres, apellidos, sobre mí,
+ * ubicación, WhatsApp y PIN). Cada respuesta se normaliza (minúsculas,
+ * sin tildes ni caracteres especiales) y se valida antes de pasar al
+ * siguiente campo. El progreso vive en caché por sesión para poder
+ * retomarlo; la creación de la cuenta la hace el controlador cuando
+ * process() devuelve el tipo "complete".
  */
 class VoiceAssistantService
 {
-    public const WELCOME = 'welcome';
-    public const FIRST_NAME = 'first_name';
-    public const LAST_NAME = 'last_name';
-    public const PERSONAL_DESCRIPTION = 'personal_description';
-    public const BUSINESS_NAME = 'business_name';
-    public const BUSINESS_DESCRIPTION = 'business_description';
-    public const CATEGORY = 'category';
-    public const SUBCATEGORY = 'subcategory';
-    public const TYPE = 'type';
-    public const PRICE = 'price';
-    public const OFFERINGS = 'offerings';
-    public const REGION = 'region';
-    public const PROVINCE = 'province';
-    public const DISTRICT = 'district';
-    public const SCHEDULE = 'schedule';
-    public const PHONE = 'phone';
-    public const WHATSAPP = 'whatsapp';
-    public const EMAIL = 'email';
-    public const CONTACT_EXTRA = 'contact_extra';
-    public const USERNAME = 'username';
-    public const CONFIRMATION = 'confirmation';
-    public const DOCUMENTATION = 'documentation';
+    public const INTRO = 'Bienvenido al registro de emprendedor. Le haré seis preguntas cortas. '
+        .'Hable después del pitido. ';
 
+    public const HELP = 'Responda cada pregunta después del pitido. '
+        .'Puede decir: repetir, atrás o cancelar. ';
+
+    /** @var array<string, string> campo => pregunta */
     public const STEPS = [
-        self::WELCOME => [
-            'question' => 'Bienvenido a SONARA. Te ayudaré a crear tu cuenta de emprendedor. Vamos paso a paso. Primero, dime tu nombre.',
-            'field' => 'first_name',
-            'next' => self::FIRST_NAME,
-        ],
-        self::FIRST_NAME => [
-            'question' => 'He registrado tu nombre. Dime tus apellidos.',
-            'field' => 'last_name',
-            'next' => self::LAST_NAME,
-        ],
-        self::LAST_NAME => [
-            'question' => 'Perfecto. Cuéntame brevemente quién eres y tu experiencia.',
-            'field' => 'personal_description',
-            'next' => self::PERSONAL_DESCRIPTION,
-        ],
-        self::PERSONAL_DESCRIPTION => [
-            'question' => 'Excelente. ¿Cómo se llama tu emprendimiento o negocio?',
-            'field' => 'business_name',
-            'next' => self::BUSINESS_NAME,
-        ],
-        self::BUSINESS_NAME => [
-            'question' => '¿Qué productos o servicios ofrece tu emprendimiento? Cuéntame en detalle.',
-            'field' => 'business_description',
-            'next' => self::BUSINESS_DESCRIPTION,
-        ],
-        self::BUSINESS_DESCRIPTION => [
-            'question' => 'Muy bien. ¿A qué categoría pertenece tu emprendimiento?',
-            'field' => 'category',
-            'next' => self::CATEGORY,
-        ],
-        self::CATEGORY => [
-            'question' => '¿Tu emprendimiento ofrece productos o servicios?',
-            'field' => 'type',
-            'next' => self::TYPE,
-        ],
-        self::TYPE => [
-            'question' => '¿Cuál es el precio de tus productos o el rango de precios de tus servicios?',
-            'field' => 'price',
-            'next' => self::PRICE,
-        ],
-        self::PRICE => [
-            'question' => 'Cuéntame qué productos o servicios específicos ofreces y sus precios.',
-            'field' => 'offerings',
-            'next' => self::OFFERINGS,
-        ],
-        self::OFFERINGS => [
-            'question' => '¿En qué ciudad o región te ubicas?',
-            'field' => 'region',
-            'next' => self::REGION,
-        ],
-        self::REGION => [
-            'question' => '¿En qué provincia te ubicas?',
-            'field' => 'province',
-            'next' => self::PROVINCE,
-        ],
-        self::PROVINCE => [
-            'question' => '¿En qué distrito te ubicas?',
-            'field' => 'district',
-            'next' => self::DISTRICT,
-        ],
-        self::DISTRICT => [
-            'question' => '¿Cuál es tu horario de atención habitual? Por ejemplo: de lunes a sábado, de 9 de la mañana a 6 de la tarde.',
-            'field' => 'schedule',
-            'next' => self::SCHEDULE,
-        ],
-        self::SCHEDULE => [
-            'question' => '¿Cuál es tu número de teléfono o celular?',
-            'field' => 'phone',
-            'next' => self::PHONE,
-        ],
-        self::PHONE => [
-            'question' => '¿Cuál es tu número de WhatsApp? Puede ser el mismo.',
-            'field' => 'whatsapp',
-            'next' => self::WHATSAPP,
-        ],
-        self::WHATSAPP => [
-            'question' => '¿Cuál es tu correo electrónico?',
-            'field' => 'email',
-            'next' => self::EMAIL,
-        ],
-        self::EMAIL => [
-            'question' => '¿Deseas agregar alguna red social o información adicional de contacto? Menciona el nombre de la red y tu usuario.',
-            'field' => 'contact_extra',
-            'next' => self::CONTACT_EXTRA,
-        ],
-        self::CONTACT_EXTRA => [
-            'question' => 'Casi terminamos. Dime el correo o usuario con el que quieres ingresar a tu cuenta (puede ser el mismo correo).',
-            'field' => 'username',
-            'next' => self::USERNAME,
-        ],
-        self::USERNAME => [
-            'question' => 'He terminado de recopilar tus datos. Verifiquemos todo antes de guardar.',
-            'field' => 'confirmation',
-            'next' => self::CONFIRMATION,
-        ],
-        self::CONFIRMATION => [
-            'question' => 'Perfecto. Tu cuenta será creada en pocos segundos.',
-            'field' => 'documentation',
-            'next' => self::DOCUMENTATION,
-        ],
+        'nombres' => '¿Cuáles son sus nombres?',
+        'apellidos' => '¿Cuáles son sus apellidos?',
+        'sobre_mi' => 'Cuénteme brevemente sobre usted.',
+        'ubicacion' => '¿En qué ciudad o sector se encuentra?',
+        'telefono_whatsapp' => '¿Cuál es su número de WhatsApp? Dígalo número por número.',
+        'pin' => 'Cree un PIN de cuatro dígitos. Dígalo número por número.',
     ];
 
-    /** @var array<string, string> */
+    /** @var array<string, string> palabra normalizada => comando */
     public const COMMANDS = [
-        'ayuda' => 'Puedes decir: repetir para escuchar de nuevo, volver para regresar, corregir para cambiar el último dato, salir o cancelar para detener el proceso.',
-        'repetir' => 'Repetiré la pregunta actual.',
-        'volver' => 'Regresaremos al paso anterior.',
-        'corregir' => 'Puedes indicarme el dato correcto.',
-        'continuar' => 'Continuaremos con el siguiente paso.',
-        'cancelar' => 'El proceso fue cancelado. Puedes retomarlo cuando quieras.',
-        'salir' => 'El proceso fue cancelado. Puedes retomarlo cuando quieras.',
-    ];
-
-    /** @var array<string, string> */
-    public const WORDS = [
-        'ayuda' => 'help',
         'repetir' => 'repeat',
-        'volver' => 'back',
         'atras' => 'back',
-        'corregir' => 'fix',
-        'continuar' => 'continue',
-        'siguiente' => 'continue',
-        'guardar' => 'save',
-        'salir' => 'exit',
+        'volver' => 'back',
+        'ayuda' => 'help',
         'cancelar' => 'exit',
+        'salir' => 'exit',
     ];
 
     public function __construct(protected ?string $sessionKey = null)
     {
-        $this->sessionKey = $sessionKey ?? 'voice_registration.'.session()->getId();
     }
 
     public function start(): array
     {
-        $session = [
-            'state' => self::WELCOME,
-            'asked' => false,
-            'data' => [],
-            'started_at' => now(),
-            'updated_at' => now(),
-        ];
-        cache()->put($this->sessionKey, $session, now()->addDay());
+        $session = ['step' => array_key_first(self::STEPS), 'data' => []];
+        $this->save($session);
 
-        return $this->reply($session);
-    }
-
-    public function state(): string
-    {
-        return data_get(cache()->get($this->sessionKey, []), 'state', self::WELCOME);
-    }
-
-    public function data(): array
-    {
-        return data_get(cache()->get($this->sessionKey, []), 'data', []);
+        return $this->question($session, self::INTRO);
     }
 
     public function resume(): array
     {
-        $session = cache()->get($this->sessionKey);
+        $session = $this->load();
 
-        if (! $session) {
-            return $this->start();
-        }
-
-        return $this->reply($session);
+        return $session ? $this->question($session) : $this->start();
     }
 
     public function hasSession(): bool
     {
-        return (bool) cache()->get($this->sessionKey);
+        return (bool) $this->load();
     }
 
     public function resetSession(): void
     {
-        cache()->forget($this->sessionKey);
+        cache()->forget($this->key());
+    }
+
+    public function data(): array
+    {
+        return $this->load()['data'] ?? [];
     }
 
     public function process(?string $transcript): array
     {
-        $session = cache()->get($this->sessionKey);
-
+        $session = $this->load();
         if (! $session) {
             return $this->start();
         }
 
-        $trimmed = mb_strtolower(trim((string) $transcript));
-        $command = self::WORDS[$trimmed] ?? null;
+        $normalized = VoiceText::normalize($transcript);
 
-        if ($trimmed === 'no') {
-            $session['asked'] = true;
+        switch (self::COMMANDS[$normalized] ?? null) {
+            case 'repeat':
+                return $this->question($session);
+            case 'help':
+                return $this->question($session, self::HELP);
+            case 'exit':
+                $this->resetSession();
 
-            return $this->reply($session, 'De acuerdo. Repite la respuesta. Por favor, dime el dato nuevamente.');
+                return [
+                    'type' => 'exited',
+                    'speak' => 'El registro fue cancelado. Puede empezar de nuevo cuando quiera.',
+                ];
+            case 'back':
+                $previous = $this->previousStep($session['step']);
+                if ($previous === null) {
+                    return $this->question($session, 'Esta es la primera pregunta. ');
+                }
+                $session['step'] = $previous;
+                $this->save($session);
+
+                return $this->question($session);
         }
 
-        if ($command === 'repeat') {
-            $session['asked'] = false;
-
-            return $this->reply($session);
+        $field = $session['step'];
+        $result = $this->validate($field, (string) $transcript, $session['data']);
+        if ($result['error']) {
+            return $this->question($session, $result['error'].' ');
         }
 
-        if ($command === 'back') {
-            $session['state'] = $this->previousState($session['state']);
-            $session['asked'] = false;
+        $session['data'][$field] = $result['value'];
 
-            return $this->reply($session, 'Volvimos al paso anterior.');
+        if ($result['restart_at'] ?? null) {
+            $session['step'] = $result['restart_at'];
+            $this->save($session);
+
+            return $this->question($session, $result['note'].' ');
         }
 
-        if ($command === 'exit') {
-            cache()->forget($this->sessionKey);
+        $next = $this->nextStep($field);
+        if ($next === null) {
+            $this->save($session);
 
-            return [
-                'type' => 'exited',
-                'message' => self::COMMANDS['salir'],
-                'session' => null,
-            ];
+            return ['type' => 'complete', 'data' => $session['data']];
         }
 
-        if ($command === 'help') {
-            return [
-                'type' => 'message',
-                'message' => self::COMMANDS['ayuda'],
-                'state' => $session['state'],
-            ];
-        }
+        $session['step'] = $next;
+        $this->save($session);
 
-        if ($command === 'fix') {
-            $session['asked'] = true;
-
-            return $this->reply($session, 'De acuerdo, dime el dato correcto.');
-        }
-
-        if ($command === 'continue' || $command === 'save') {
-            $session['asked'] = false;
-
-            return $this->reply($session, 'Antes de continuar necesito que me digas el dato solicitado.');
-        }
-
-        // Captura de dato
-        $step = self::STEPS[$session['state']] ?? null;
-        if (! $step) {
-            return $this->finish($session);
-        }
-
-        $session['data'][$step['field']] = trim((string) $transcript);
-        $session['asked'] = false;
-        $session['state'] = $step['next'];
-        $session['updated_at'] = now();
-
-        cache()->put($this->sessionKey, $session, now()->addDay());
-
-        return $this->reply($session);
+        return $this->question($session);
     }
 
-    public function review(): array
+    /**
+     * Vuelve a la pregunta de nombres, conservando lo demás. Se usa si al
+     * crear la cuenta el nombre completo resulta estar ya registrado.
+     */
+    public function restartAtNames(string $note): array
     {
-        $data = $this->data();
+        $session = $this->load() ?? ['data' => []];
+        $session['step'] = 'nombres';
+        $this->save($session);
+
+        return $this->question($session, $note.' ');
+    }
+
+    public static function usernameFor(string $nombres, string $apellidos): string
+    {
+        return VoiceText::normalize($nombres.' '.$apellidos);
+    }
+
+    /**
+     * @return array{value: ?string, error: ?string, restart_at?: string, note?: string}
+     */
+    protected function validate(string $field, string $transcript, array $data): array
+    {
+        $normalized = VoiceText::normalize($transcript);
+
+        switch ($field) {
+            case 'nombres':
+            case 'apellidos':
+                $label = $field === 'nombres' ? 'sus nombres' : 'sus apellidos';
+                if (mb_strlen($normalized) < 2 || ! VoiceText::isLettersOnly($normalized)) {
+                    return ['value' => null, 'error' => 'Solo necesito letras. Diga '.$label.' otra vez.'];
+                }
+                if (mb_strlen($normalized) > 80) {
+                    return ['value' => null, 'error' => 'Es demasiado largo. Diga '.$label.' otra vez.'];
+                }
+                if ($field === 'apellidos') {
+                    $username = self::usernameFor($data['nombres'] ?? '', $normalized);
+                    if (User::where('username', $username)->exists()) {
+                        return [
+                            'value' => $normalized,
+                            'error' => null,
+                            'restart_at' => 'nombres',
+                            'note' => 'Ya existe una cuenta con el nombre '.$username.'. '
+                                .'Si es suya, vaya a la pantalla de login. Si no, diga sus nombres completos, '
+                                .'incluyendo su segundo nombre.',
+                        ];
+                    }
+                }
+
+                return ['value' => $normalized, 'error' => null];
+
+            case 'sobre_mi':
+                if (mb_strlen($normalized) < 3) {
+                    return ['value' => null, 'error' => 'No le entendí. Cuénteme brevemente sobre usted.'];
+                }
+
+                return ['value' => mb_substr($normalized, 0, 500), 'error' => null];
+
+            case 'ubicacion':
+                if (mb_strlen($normalized) < 2) {
+                    return ['value' => null, 'error' => 'No le entendí.'];
+                }
+
+                return ['value' => mb_substr($normalized, 0, 150), 'error' => null];
+
+            case 'telefono_whatsapp':
+                $phone = SpokenDigits::parsePhone($transcript);
+                if (! $phone) {
+                    return ['value' => null, 'error' => 'No entendí el número.'];
+                }
+
+                return ['value' => $phone, 'error' => null];
+
+            case 'pin':
+                $pin = SpokenDigits::parseFourDigits($transcript);
+                if (! $pin) {
+                    return ['value' => null, 'error' => 'El PIN debe tener exactamente cuatro dígitos.'];
+                }
+
+                return ['value' => $pin, 'error' => null];
+        }
+
+        return ['value' => $normalized, 'error' => null];
+    }
+
+    protected function question(array $session, string $note = ''): array
+    {
+        $fields = array_keys(self::STEPS);
+        $prompt = self::STEPS[$session['step']];
 
         return [
-            'type' => 'review',
-            'summary' => [
-                'Nombre' => $data['first_name'] ?? null,
-                'Apellidos' => $data['last_name'] ?? null,
-                'Descripción personal' => $data['personal_description'] ?? null,
-                'Emprendimiento' => $data['business_name'] ?? null,
-                'Descripción del emprendimiento' => $data['business_description'] ?? null,
-                'Categoría' => $data['category'] ?? null,
-                'Tipo' => $data['type'] ?? null,
-                'Precio' => $data['price'] ?? null,
-                'Productos/Servicios' => $data['offerings'] ?? null,
-                'Ubicación' => collect([$data['district'], $data['province'], $data['region']])->filter()->implode(', '),
-                'Horario' => $data['schedule'] ?? null,
-                'Teléfono' => $data['phone'] ?? null,
-                'WhatsApp' => $data['whatsapp'] ?? null,
-                'Correo' => $data['email'] ?? null,
-                'Contacto adicional' => $data['contact_extra'] ?? null,
-                'Usuario' => $data['username'] ?? null,
-            ],
+            'type' => 'question',
+            'field' => $session['step'],
+            'index' => array_search($session['step'], $fields, true) + 1,
+            'total' => count($fields),
+            'prompt' => $prompt,
+            'speak' => $note.$prompt,
         ];
     }
 
-    public function nextQuestion(): array
+    protected function nextStep(string $field): ?string
     {
-        return $this->reply(cache()->get($this->sessionKey) ?: [
-            'state' => self::WELCOME,
-            'asked' => false,
-            'data' => [],
-        ]);
+        $fields = array_keys(self::STEPS);
+        $index = array_search($field, $fields, true);
+
+        return $fields[$index + 1] ?? null;
     }
 
-    protected function reply(array $session, ?string $note = null): array
+    protected function previousStep(string $field): ?string
     {
-        $step = self::STEPS[$session['state']] ?? null;
-        $hadQuestion = (bool) ($session['asked'] ?? false);
+        $fields = array_keys(self::STEPS);
+        $index = array_search($field, $fields, true);
 
-        if ($step && $session['asked']) {
-            return [
-                'type' => 'confirm',
-                'state' => $session['state'],
-                'field' => $step['field'],
-                'question' => $step['question'],
-                'message' => $note,
-            ];
-        }
-
-        if ($step) {
-            $session['asked'] = true;
-            cache()->put($this->sessionKey, $session, now()->addDay());
-
-            return [
-                'type' => 'question',
-                'state' => $session['state'],
-                'field' => $step['field'],
-                'ssml' => $step['question'],
-                'message' => $note,
-                'is_welcome' => $session['state'] === self::WELCOME,
-            ];
-        }
-
-        return $this->finish($session);
+        return $index > 0 ? $fields[$index - 1] : null;
     }
 
-    protected function finish(array $session): array
+    protected function load(): ?array
     {
-        cache()->put($this->sessionKey, $session, now()->addDay());
-
-        return [
-            'type' => 'blocked',
-            'state' => self::CONFIRMATION,
-            'message' => 'Se ha completado la recopilación de datos. Revisa el resumen y confirma para crear tu cuenta.',
-            'summary' => $this->review()['summary'],
-        ];
+        return cache()->get($this->key());
     }
 
-    protected function previousState(string $state): string
+    protected function save(array $session): void
     {
-        $ordered = array_keys(self::STEPS);
-        $index = array_search($state, $ordered, true);
+        cache()->put($this->key(), $session, now()->addDay());
+    }
 
-        return $index > 0 ? $ordered[$index - 1] : $state;
+    // La clave se calcula al usarla (no en el constructor) para que
+    // corresponda a la sesión ya iniciada por el middleware.
+    protected function key(): string
+    {
+        return $this->sessionKey ?? 'voice_registration.'.session()->getId();
     }
 }

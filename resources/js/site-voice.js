@@ -28,6 +28,8 @@ export function registerSiteVoice() {
         _wantsListen: false,
         _restartTimer: null,
         _listenTimeout: null,
+        _restartAttempts: 0,
+        _lastErrorCode: null,
 
         init() {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -75,6 +77,7 @@ export function registerSiteVoice() {
             add(['explorar', 'catalogo', 'buscar', 'emprendimientos', 'servicios'], 'Explorar emprendimientos', d.navExplore);
             add(['categorias', 'categorias por voz'], 'Ver categorÃ­as', d.navCategories);
             add(['registrarme', 'crear cuenta', 'registro', 'ser emprendedor'], 'Crear cuenta', d.navRegister);
+            add(['login por voz', 'ingresar por voz', 'iniciar sesion por voz', 'entrar por voz'], 'Login por voz', d.navVoiceLogin);
             add(['iniciar sesion', 'ingresar', 'entrar', 'login'], 'Iniciar sesiÃ³n', d.navLogin);
             add(['registro por voz', 'por voz', 'hablar', 'registro hablado'], 'Registro guiado por voz', d.navVoice);
             add(['mi perfil', 'perfil'], 'Mi perfil', d.navProfile);
@@ -99,8 +102,7 @@ export function registerSiteVoice() {
         greet() {
             if (document.visibilityState === 'hidden') return;
             const msg = 'Bienvenido a Sonara, una plataforma accesible. ' +
-                'Para activar el asistente de voz en cualquier momento, presiona el botón de micrófono ' +
-                'en la esquina inferior derecha, o la tecla Alt más V.';
+                'Para activar el asistente de voz en cualquier momento, presiona la combinación de teclas Alt más V.';
             this.say(msg);
         },
 
@@ -134,6 +136,7 @@ export function registerSiteVoice() {
             }
             this.stopSpeak();
             this._wantsListen = true;
+            this._restartAttempts = 0;
             if (this._listenTimeout) { clearTimeout(this._listenTimeout); this._listenTimeout = null; }
             if (duration) {
                 this._listenTimeout = setTimeout(() => this.stopListenAndAnnounce(), duration);
@@ -147,6 +150,7 @@ export function registerSiteVoice() {
                     this.status = 'Escuchandoâ€¦ diga su opciÃ³n.';
                 } catch (e) {
                     if (String(e).indexOf('already') === -1) {
+                        console.error('[siteVoiceAssistant] No se pudo iniciar el reconocimiento:', e);
                         this.status = 'No se pudo activar el micrÃ³fono. Verifique el permiso.';
                     } else {
                         this.listening = true;
@@ -178,6 +182,9 @@ export function registerSiteVoice() {
                     finalText += results[i][0].transcript;
                 }
             }
+            // Llegó audio real: el micrófono funciona, se reinicia el contador.
+            this._restartAttempts = 0;
+
             const interim = this._getInterim(results);
             if (finalText.trim()) {
                 this.status = 'He escuchado: "' + finalText.trim() + '".';
@@ -197,6 +204,8 @@ export function registerSiteVoice() {
 
         _onError(event) {
             const err = (event && event.error) || '';
+            console.error('[siteVoiceAssistant] Error de reconocimiento:', err, event);
+            this._lastErrorCode = err;
             if (err === 'no-speech') {
                 this.listening = false;
                 this._scheduleRestart();
@@ -206,6 +215,12 @@ export function registerSiteVoice() {
                 this._wantsListen = false;
                 this.listening = false;
                 this.status = 'Permiso de micrÃ³fono denegado. ActÃ­velo en el navegador.';
+                return;
+            }
+            if (err === 'audio-capture') {
+                this._wantsListen = false;
+                this.listening = false;
+                this.status = 'No se detecta ningún micrófono. Verifique que esté conectado y elegido en el navegador.';
                 return;
             }
             if (err === 'network' || err === 'aborted') {
@@ -224,13 +239,29 @@ export function registerSiteVoice() {
         _scheduleRestart() {
             if (!this._wantsListen || this.listening) return;
             if (this._restartTimer) clearTimeout(this._restartTimer);
+            this._restartAttempts += 1;
+            if (this._restartAttempts > 4) {
+                // El micrófono se reinicia una y otra vez sin captar nada:
+                // dejar de intentar en silencio y avisar con claridad.
+                this._wantsListen = false;
+                if (this._lastErrorCode === 'network' || this._lastErrorCode === 'aborted') {
+                    this.status = 'No se pudo conectar con el servicio de reconocimiento de voz. Revise su conexión a internet (algunas redes corporativas o VPN lo bloquean). Presione Alt+V para reintentar.';
+                } else {
+                    this.status = 'No logro captar audio de tu micrófono. Revise que no esté silenciado o sea el dispositivo correcto. Presione Alt+V para reintentar.';
+                }
+                return;
+            }
+            const delay = Math.min(500 * this._restartAttempts, 3000);
             this._restartTimer = setTimeout(() => {
                 if (!this._wantsListen || this.listening) return;
                 try {
                     this.speechRecognition.start();
                     this.listening = true;
-                } catch (e) { this._restartTimer = null; }
-            }, 500);
+                } catch (e) {
+                    console.error('[siteVoiceAssistant] Falló el reintento de escucha:', e);
+                    this._restartTimer = null;
+                }
+            }, delay);
         },
 
         // ---------------------------------------------------------------

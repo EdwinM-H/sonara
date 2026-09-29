@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccessibilityPreference;
-use App\Models\Business;
-use App\Models\Category;
 use App\Models\EntrepreneurProfile;
 use App\Models\User;
+use App\Services\Assistant\SpokenDigits;
 use App\Services\Assistant\VoiceAssistantService;
 use App\Services\Audit\AuditService;
 use App\Services\Verification\VerificationService;
@@ -26,6 +25,7 @@ class VoiceRegistrationController extends Controller
     public function index()
     {
         return view('voice.index', [
+            'mode' => 'register',
             'hasSession' => $this->assistant->hasSession(),
         ]);
     }
@@ -44,36 +44,53 @@ class VoiceRegistrationController extends Controller
     {
         $request->validate(['transcript' => 'required|string|max:500']);
 
-        return response()->json($this->assistant->process($request->input('transcript')));
+        $step = $this->assistant->process($request->input('transcript'));
+
+        if ($step['type'] !== 'complete') {
+            return response()->json($step);
+        }
+
+        $data = $step['data'];
+        $username = VoiceAssistantService::usernameFor($data['nombres'], $data['apellidos']);
+
+        // Doble verificación por si otra persona registró el mismo nombre
+        // completo mientras se respondían las demás preguntas.
+        if (User::where('username', $username)->exists()) {
+            return response()->json($this->assistant->restartAtNames(
+                'Ya existe una cuenta con el nombre '.$username.'. Diga sus nombres completos, incluyendo su segundo nombre.'
+            ));
+        }
+
+        $this->createAccount($data, $username);
+        $this->assistant->resetSession();
+
+        return response()->json([
+            'type' => 'registered',
+            'speak' => 'Perfecto, se creó la cuenta. '
+                .'Su usuario es: '.$username.'. '
+                .'Su PIN es: '.SpokenDigits::spaceOut($data['pin']).'. '
+                .'Ahora le mandaremos a la pantalla de login donde deberá ingresar con las credenciales que se le dieron.',
+            'redirect' => route('voice-login.index'),
+        ]);
     }
 
-    public function review()
+    protected function createAccount(array $data, string $username): User
     {
-        return response()->json($this->assistant->review());
-    }
-
-    public function confirm(Request $request)
-    {
-        $request->validate(['password' => 'required|string|min:8']);
-
-        $data = $this->assistant->data();
-
-        return DB::transaction(function () use ($data, $request) {
-            // Relacionar categoría si coincide
-            $category = $this->resolveCategory($data['category'] ?? null);
-
-            $email = strtolower(trim($data['email'] ?? ('usuario_'.mb_substr((string) (($data['first_name'] ?? 'e')), 0, 12).'_'.Str::random(4).'@sonara.test')));
-
-            $name = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')) ?: 'Emprendedor';
-
+        return DB::transaction(function () use ($data, $username) {
             $user = User::create([
-                'first_name' => $data['first_name'] ?? null,
-                'last_name' => $data['last_name'] ?? null,
-                'name' => $name,
-                'email' => $email,
-                'phone' => $data['phone'] ?? null,
-                'password' => $request->input('password'),
+                'first_name' => $data['nombres'],
+                'last_name' => $data['apellidos'],
+                'name' => $username,
+                'username' => $username,
+                // El correo y la contraseña son obligatorios en la tabla de
+                // usuarios, pero este registro no los pide: se generan
+                // valores internos y el acceso es con usuario + PIN.
+                'email' => 'voz.'.Str::lower(Str::random(16)).'@sonara.local',
+                'password' => Str::random(40),
+                'phone' => $data['telefono_whatsapp'],
             ]);
+            $user->voice_pin = $data['pin']; // cast "hashed" → bcrypt
+            $user->save();
             $user->assignRole('entrepreneur');
 
             AccessibilityPreference::create([
@@ -83,25 +100,8 @@ class VoiceRegistrationController extends Controller
 
             $profile = EntrepreneurProfile::create([
                 'user_id' => $user->id,
-                'personal_description' => $data['personal_description'] ?? null,
-            ]);
-
-            $businessSlug = Str::slug($data['business_name'] ?? 'emprendimiento-'.$user->id, '-').'-'.Str::random(4);
-
-            $business = Business::create([
-                'entrepreneur_profile_id' => $profile->id,
-                'name' => $data['business_name'] ?? 'Mi emprendimiento',
-                'slug' => $businessSlug,
-                'description' => $data['business_description'] ?? null,
-                'category_id' => $category?->id,
-                'type' => mb_strtolower(trim((string) ($data['type'] ?? 'producto'))) === 'servicio' ? 'servicio' : 'producto',
-                'price' => is_numeric(str_replace(',', '.', (string) ($data['price'] ?? 'null'))) ? (float) str_replace(',', '.', (string) $data['price']) : null,
-                'region' => $data['region'] ?? 'Cusco',
-                'province' => $data['province'] ?? null,
-                'district' => $data['district'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'whatsapp' => $data['whatsapp'] ?? $data['phone'] ?? null,
-                'contact_email' => $email,
+                'personal_description' => $data['sobre_mi'],
+                'location' => $data['ubicacion'],
             ]);
 
             $this->verification->startVerificationWindow($profile);
@@ -110,34 +110,10 @@ class VoiceRegistrationController extends Controller
                 'voice_registration',
                 User::class,
                 $user->id,
-                'Registro autónomo por voz completado para '.$name,
+                'Registro por voz completado para '.$username,
             );
 
-            $this->assistant->resetSession();
-
-            auth()->login($user);
-
-            return response()->json([
-                'success' => true,
-                'redirect' => route('entrepreneur.dashboard'),
-            ]);
+            return $user;
         });
-    }
-
-    protected function resolveCategory(?string $name): ?Category
-    {
-        if (! $name) {
-            return Category::query()->where('name', 'like', '%otros%')->first();
-        }
-
-        $category = Category::query()
-            ->where('name', 'like', '%'.trim($name).'%')
-            ->first();
-
-        if ($category) {
-            return $category;
-        }
-
-        return Category::query()->where('name', 'like', '%otros%')->first();
     }
 }

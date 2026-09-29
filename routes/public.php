@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PublicPortalController;
+use App\Http\Controllers\VoiceLoginController;
 use App\Http\Controllers\VoiceRegistrationController;
 use App\Http\Controllers\CustomerRequestController;
 use Illuminate\Support\Facades\Route;
@@ -26,11 +27,16 @@ Route::middleware(['auth', 'active', 'role:customer'])->group(function () {
 });
 
 // ---------------------------------------------------------------------------
-// Registro autónomo mediante voz
+// Registro de emprendedor por voz
 // ---------------------------------------------------------------------------
 Route::get('/registro/voz', [VoiceRegistrationController::class, 'index'])->name('voice-registration.index');
 Route::get('/registro/voz/iniciar', [VoiceRegistrationController::class, 'start'])->name('voice-registration.start');
 Route::get('/registro/voz/retomar', [VoiceRegistrationController::class, 'resume'])->name('voice-registration.resume');
 Route::post('/registro/voz/respuesta', [VoiceRegistrationController::class, 'process'])->name('voice-registration.process');
-Route::get('/registro/voz/resumen', [VoiceRegistrationController::class, 'review'])->name('voice-registration.review');
-Route::post('/registro/voz/confirmar', [VoiceRegistrationController::class, 'confirm'])->name('voice-registration.confirm');
+
+// ---------------------------------------------------------------------------
+// Login de emprendedor por voz (nombre completo + PIN de 4 dígitos)
+// ---------------------------------------------------------------------------
+Route::get('/login/voz', [VoiceLoginController::class, 'index'])->name('voice-login.index');
+Route::get('/login/voz/iniciar', [VoiceLoginController::class, 'start'])->name('voice-login.start');
+Route::post('/login/voz/respuesta', [VoiceLoginController::class, 'process'])->name('voice-login.process');

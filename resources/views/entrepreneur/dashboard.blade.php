@@ -3,6 +3,10 @@
 @section('panel-content')
     <x-panel-header title="Hola, {{ auth()->user()->first_name }}" subtitle="Este es el resumen de tu emprendimiento en SONARA." />
 
+    @if (in_array(auth()->user()->getsAccessibilityPreference()->navigation_mode, ['voz', 'mixto'], true))
+        @include('entrepreneur.partials.voice-menu')
+    @endif
+
     {{-- Alertas de verificación --}}
     @if ($profile && $profile->verification_status !== \App\Models\EntrepreneurProfile::VERIF_APROBADO)
         <div role="alert" class="rounded-2xl mb-6 border-[1.5px] p-5 flex gap-4" style="background-color: var(--color-warning-soft); border-color: var(--color-warning-border); color: var(--color-warning)">

@@ -18,6 +18,7 @@ class EntrepreneurProfile extends Model
     protected $fillable = [
         'user_id',
         'personal_description',
+        'location',
         'verification_status',
         'review_note',
         'registered_fully_at',

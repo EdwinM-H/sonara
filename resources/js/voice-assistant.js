@@ -1,38 +1,61 @@
 /**
- * SONARA — Motor del Asistente de Voz (registro guiado).
+ * SONARA — Motor del Asistente de Voz del emprendedor.
  *
  * Capa cliente de Speech-to-Text y Text-to-Speech sobre la Web Speech API.
- * El backend (VoiceAssistantService) define la máquina de estados; este
- * módulo orquesta la conversación, la captura de voz y la confirmación.
+ * El backend define cada conversación; este módulo habla, escucha y
+ * navega, en tres modos (según data-mode del contenedor):
+ *  - register: registro (nombres, apellidos, sobre mí, ubicación,
+ *    WhatsApp, PIN) y, al terminar, redirección al login.
+ *  - login: usuario (nombre completo) + PIN y redirección al dashboard.
+ *  - dashboard: menú por voz del dashboard de emprendedor.
  *
- * Mejoras frente a la primera versión:
- *  - Reconocimiento continuo con resultados provisionales (live).
- *  - Reinicio automático cuando la escucha termina sin reconocer.
- *  - Espera real a que la síntesis termine antes de abrir el micrófono.
- *  - Auto-escucha tras cada pregunta (manos libres "desde que se habla").
- *  - Selección de una voz española de calidad para la síntesis.
- *  - Manejo granular de errores (no-speech, permisos, red).
+ * Reglas que gobiernan este archivo:
+ *  - Todo mensaje nuevo se dice en voz alta, no solo en pantalla.
+ *  - Cada vez que se abre el micrófono suena antes un pitido corto y leve.
+ *  - Todo lo escuchado se pasa a minúsculas, sin tildes ni caracteres
+ *    especiales antes de enviarse.
+ *  - La captura de voz espera un silencio real antes de dar por terminada
+ *    la respuesta (no corta al primer corte que detecte el navegador).
  */
 import { pickBestSpanishVoice, readVoicePrefs } from './voice-quality';
+import { audioAllowed, beep, normalizeVoiceText } from './voice-core';
+
+const NO_RESPONSE_TIMEOUT_MS = 6000;
+const CAPTURE_SILENCE_MS = 2000;
+const MAX_LISTEN_CEILING_MS = 15000;
 
 export function registerVoiceAssistant() {
     window.Alpine.data('voiceAssistant', () => ({
         running: false,
         listening: false,
-        phase: 'idle', // idle | question | confirm | review | blocked | exited
-        state: 'welcome',
+        blocked: false,
+        mode: 'register', // register | login | dashboard
+        field: null,
+        index: 0,
+        total: 0,
+        // Lo último que dijo el asistente (para "repetir") y la pregunta
+        // en curso (para volver a hacerla si no se escucha nada).
         program: '',
+        prompt: '',
         message: '',
         typedAnswer: '',
-        password: '',
-        current: null,
-        history: [],
+        hasSession: false,
         speechRecognition: null,
         _synth: null,
-        _lastFinalIndex: 0,
+        _utterance: null,
+        _priorText: '',
+        _sessionFinal: '',
+        _sessionInterim: '',
+        _lastSpokenNormalized: '',
+        _hasHeardAnything: false,
         _wantsListen: false,
         _restartTimer: null,
-        _silenceTimer: null,
+        _captureTimer: null,
+        _noResponseTimer: null,
+        _maxListenTimer: null,
+        _restartAttempts: 0,
+        _reopenAttempts: 0,
+        _lastErrorCode: null,
 
         init() {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -51,92 +74,123 @@ export function registerVoiceAssistant() {
             if (this._synth && this._synth.addEventListener) {
                 this._synth.addEventListener('voiceschanged', () => this._synth.getVoices());
             }
-
-            // No se autoarranca ni se abre el micrófono al cargar la página:
-            // los navegadores exigen un gesto real del usuario (clic o
-            // tecla) antes de conceder el micrófono, así que el flujo
-            // empieza únicamente cuando el usuario presiona "Comenzar /
-            // Retomar" (ver botón @click="autoStart()" en la vista).
+            const d = this.$root.dataset;
+            this.mode = d.mode || 'register';
+            this.hasSession = d.hasSession === '1';
+            this._tryAutoStart();
         },
 
         // ---------------------------------------------------------------
-        // Arranque / reanudación
+        // Arranque: sin teclado cuando el navegador lo permite (p. ej.
+        // tras llegar desde otra pantalla de voz del mismo sitio). Si el
+        // navegador exige antes un gesto, arranca con la primera tecla o
+        // clic en cualquier parte de la página.
         // ---------------------------------------------------------------
-        async autoStart() {
-            this.running = true;
-            this.typedAnswer = '';
-            this.phase = 'question';
-            // Retomar progreso guardado; si no existe, iniciar de cero.
-            try {
-                const res = await fetch(this.$root.dataset.resumeRoute, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-                });
-                if (!res.ok) throw new Error('sin progreso');
-                const data = await res.json();
-                this._applyStep(data);
-            } catch (e) {
-                await this.start();
+        async _tryAutoStart() {
+            if (await audioAllowed()) {
+                this.begin();
+                return;
             }
+            this._waitForGesture();
         },
 
-        async start() {
+        _waitForGesture() {
+            this.blocked = true;
+            this.running = false;
+            const trigger = () => {
+                document.removeEventListener('keydown', trigger, true);
+                document.removeEventListener('click', trigger, true);
+                this.blocked = false;
+                if (!this.running) this.begin();
+            };
+            document.addEventListener('keydown', trigger, true);
+            document.addEventListener('click', trigger, true);
+        },
+
+        begin() {
+            if (this.running) return;
             this.running = true;
-            this.typedAnswer = '';
-            this.phase = 'question';
-            try {
-                const res = await fetch(this.$root.dataset.startRoute, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-                });
-                const data = await res.json();
-                this._applyStep(data);
-            } catch (e) {
-                this.message = 'Ocurrió un error al iniciar. Intenta de nuevo.';
+            if (this.mode === 'dashboard') {
+                this._applyStep({ type: 'question', speak: this.$root.dataset.prompt });
+                return;
             }
+            const d = this.$root.dataset;
+            const route = this.mode === 'login'
+                ? d.startRoute
+                : (this.hasSession ? d.resumeRoute : d.startRoute);
+            this._get(route);
+        },
+
+        restart() {
+            this.stopListening();
+            this.stopSpeak();
+            this.running = false;
+            this.hasSession = false;
+            this.begin();
         },
 
         _applyStep(data) {
-            this.current = data;
-            this.phase = data.type;
-            this.state = data.state || this.state;
-            this.program = data.ssml || data.message || '';
-            this.message = data.message || '';
-            if (data.type === 'question' || data.type === 'confirm') {
-                this._play(this.program, { listen: true });
-            } else if (data.type === 'review' || data.type === 'blocked') {
-                this.showReview();
-            } else {
-                this._play(this.program, { listen: false });
+            this.program = data.speak || '';
+            this.message = '';
+            if (data.field !== undefined) this.field = data.field;
+            if (data.index) { this.index = data.index; this.total = data.total; }
+
+            switch (data.type) {
+                case 'question':
+                    this.prompt = data.prompt || data.speak;
+                    this._play(this.program, { listen: true });
+                    break;
+                case 'registered':
+                case 'success':
+                case 'navigate':
+                    this._play(this.program, { then: () => { window.location.href = data.redirect; } });
+                    break;
+                default: // exited, locked
+                    this.running = false;
+                    this._play(this.program);
             }
         },
 
         // ---------------------------------------------------------------
-        // Captura de voz (robusta)
+        // Captura de voz (robusta): espera un silencio real antes de dar
+        // por terminada la respuesta, y avisa por voz si no escucha nada.
         // ---------------------------------------------------------------
         startListening() {
             if (!this.speechRecognition) {
-                this.message = 'Tu navegador no soporta reconocimiento de voz. Escribe tu respuesta con el teclado.';
+                this.message = 'Tu navegador no soporta reconocimiento de voz. Usa Google Chrome o Microsoft Edge.';
+                this._play(this.message);
                 return;
             }
             this.stopSpeak();
-            this._lastFinalIndex = 0;
+            this._priorText = '';
+            this._sessionFinal = '';
+            this._sessionInterim = '';
+            this._hasHeardAnything = false;
             this._wantsListen = true;
-            // Retardo breve: Chrome falla si se abre el micrófono mientras
-            // todavía suena la síntesis.
-            setTimeout(() => {
+            this._restartAttempts = 0;
+            this._reopenAttempts = 0;
+            // Pausa breve tras la síntesis (su "onend" puede llegar antes
+            // de que el audio termine de sonar), luego el pitido, y recién
+            // al terminar el pitido se abre el micrófono: así no capta ni
+            // la cola de la voz del asistente ni el propio pitido.
+            setTimeout(async () => {
+                if (!this._wantsListen) return;
+                await beep();
                 if (!this._wantsListen) return;
                 try {
                     this.speechRecognition.lang = 'es-PE';
                     this.speechRecognition.start();
                     this.listening = true;
-                    this.message = 'Escuchando… di tu respuesta.';
-                    this._startSilenceWatchdog();
+                    this.message = 'Escuchando…';
+                    this._startNoResponseWatchdog();
+                    this._startMaxListenCeiling();
                 } catch (e) {
-                    // Ya estaba activo: se ignora.
                     if (String(e).indexOf('already') === -1) {
-                        this.listening = true;
+                        console.error('[voiceAssistant] No se pudo iniciar el reconocimiento:', e);
                     }
+                    this.listening = true;
                 }
-            }, 350);
+            }, 300);
         },
 
         stopListening() {
@@ -149,25 +203,71 @@ export function registerVoiceAssistant() {
         },
 
         _onResult(event) {
-            let finalText = '';
             const results = event.results;
-            for (let i = this._lastFinalIndex; i < results.length; i++) {
-                const result = results[i];
-                if (result.isFinal) {
-                    finalText += result[0].transcript;
-                    this._lastConfidence = result[0].confidence ?? 1;
+            // Se recalcula TODO lo final de la sesión actual en cada
+            // evento: si un resultado pasa de interino a final sin cambiar
+            // de posición, rastrear un índice "ya visto" lo perdería.
+            let sessionFinal = '';
+            for (let i = 0; i < results.length; i++) {
+                if (results[i].isFinal) {
+                    sessionFinal += results[i][0].transcript;
                 }
             }
-            this._lastFinalIndex = Math.max(this._lastFinalIndex, results.length - 1);
+            this._sessionFinal = sessionFinal;
+            this._sessionInterim = this._getInterim(results);
 
-            const interim = this._getInterim(results);
-            if (finalText.trim()) {
-                this.message = 'He escuchado: "' + finalText.trim() + '".';
-                this._sendOrRetry(finalText.trim());
-                this.stopListening();
-            } else if (interim.trim()) {
-                this.message = '…' + interim.trim();
+            this._restartAttempts = 0;
+            this._reopenAttempts = 0;
+            this._hasHeardAnything = true;
+            this._clearNoResponseWatchdog();
+
+            const best = this._bestTranscript();
+            if (best) this.message = 'He escuchado: "' + normalizeVoiceText(best) + '".';
+
+            this._scheduleCapture();
+        },
+
+        _scheduleCapture() {
+            if (this._captureTimer) clearTimeout(this._captureTimer);
+            this._captureTimer = setTimeout(() => this._finalizeCapture(), CAPTURE_SILENCE_MS);
+        },
+
+        // Lo confirmado en sesiones anteriores (si el navegador cortó y se
+        // reabrió el micrófono a mitad de la respuesta) + lo final y lo
+        // interino de la sesión actual.
+        _bestTranscript() {
+            return [this._priorText, this._sessionFinal, this._sessionInterim]
+                .filter((part) => part && part.trim())
+                .join(' ')
+                .trim();
+        },
+
+        // ¿Lo "escuchado" es el micrófono captando la voz del propio
+        // asistente? Se compara por solape de palabras. Solo aplica a
+        // capturas largas: una respuesta corta que repite palabras de la
+        // pregunta ("ver mis solicitudes") es justamente lo esperado.
+        _looksLikeSelfEcho(capturedNormalized) {
+            const spoken = this._lastSpokenNormalized;
+            if (!spoken || !capturedNormalized) return false;
+            const capturedWords = capturedNormalized.split(' ').filter(Boolean);
+            if (capturedWords.length < 6) return false;
+            const spokenWords = new Set(spoken.split(' ').filter(Boolean));
+            const overlap = capturedWords.filter((w) => spokenWords.has(w)).length;
+            return (overlap / capturedWords.length) > 0.7;
+        },
+
+        _finalizeCapture() {
+            this._captureTimer = null;
+            const text = this._bestTranscript();
+            if (!text) return;
+            if (this._looksLikeSelfEcho(normalizeVoiceText(text))) {
+                this._priorText = '';
+                this._sessionFinal = '';
+                this._sessionInterim = '';
+                return;
             }
+            this.stopListening();
+            this._dispatchAnswer(text);
         },
 
         _getInterim(results) {
@@ -179,223 +279,263 @@ export function registerVoiceAssistant() {
             return '';
         },
 
+        _dispatchAnswer(text) {
+            const normalized = normalizeVoiceText(text);
+            if (!normalized) {
+                this._play('No le entendí. ' + this.prompt, { listen: true });
+                return;
+            }
+            this.message = 'He escuchado: "' + normalized + '".';
+            this._post(this.$root.dataset.processRoute, { transcript: normalized });
+        },
+
         _onError(event) {
             const err = (event && event.error) || '';
-            if (err === 'no-speech') {
-                // Silencio: se reinicia la escucha sin molestar.
-                this.listening = false;
-                this._scheduleRestart();
+            this._lastErrorCode = err;
+            if (err === 'no-speech' || err === 'network' || err === 'aborted') {
+                // _onEnd() (que siempre sigue a onerror) decide si reintenta.
+                if (err === 'no-speech') this.listening = false;
                 return;
             }
-            if (err === 'not-allowed' || err === 'service-not-allowed') {
-                this._wantsListen = false;
-                this.listening = false;
-                this.message = 'No tengo permiso para usar el micrófono. Actívalo en el navegador o escribe tu respuesta.';
-                return;
-            }
-            if (err === 'network' || err === 'aborted') {
-                this._scheduleRestart();
-                return;
-            }
+            console.error('[voiceAssistant] Error de reconocimiento:', err, event);
+            this._wantsListen = false;
             this.listening = false;
-            this.message = 'No pude escuchar (error: ' + err + '). Escribe tu respuesta o inténtalo de nuevo.';
+            if (err === 'not-allowed' || err === 'service-not-allowed') {
+                this.message = 'No tengo permiso para usar el micrófono. Actívalo en el navegador.';
+            } else if (err === 'audio-capture') {
+                this.message = 'No se detecta ningún micrófono. Verifica que esté conectado.';
+            } else {
+                this.message = 'No pude escuchar (error: ' + err + '). Inténtalo de nuevo.';
+            }
+            this._play(this.message);
         },
 
         _onEnd() {
             this.listening = false;
-            this._clearSilence();
-            if (this._wantsListen) {
-                // Terminó sin reconocer (silencio o corte): reintenta.
-                this._scheduleRestart();
+            if (!this._wantsListen) return;
+
+            if (this._hasHeardAnything) {
+                // El navegador cortó a mitad de la respuesta: se reabre
+                // para seguir escuchando la MISMA respuesta, con límite.
+                this._reopenAttempts += 1;
+                if (this._reopenAttempts > 4) {
+                    this._giveUpMidCapture();
+                    return;
+                }
+                const delay = Math.min(400 * this._reopenAttempts, 2000);
+                this._restartTimer = setTimeout(() => {
+                    if (!this._wantsListen) return;
+                    this._reopenForSameAnswer();
+                }, delay);
+                return;
+            }
+            this._scheduleRestart();
+        },
+
+        _giveUpMidCapture() {
+            this.stopListening();
+            if (this._lastErrorCode === 'network' || this._lastErrorCode === 'aborted') {
+                this.message = 'Se perdió la conexión con el servicio de reconocimiento de voz. Revisa tu conexión a internet.';
+            } else {
+                this.message = 'No logro mantener la escucha activa. Inténtalo de nuevo.';
+            }
+            this._play(this.message);
+        },
+
+        _reopenForSameAnswer() {
+            this._priorText = this._bestTranscript();
+            this._sessionFinal = '';
+            this._sessionInterim = '';
+            try {
+                this.speechRecognition.start();
+                this.listening = true;
+            } catch (e) {
+                // El temporizador de captura igual disparará con lo acumulado.
             }
         },
 
         _scheduleRestart() {
             if (!this._wantsListen) return;
             this._clearTimers();
+            this._restartAttempts += 1;
+            if (this._restartAttempts > 4) {
+                this._wantsListen = false;
+                if (this._lastErrorCode === 'network' || this._lastErrorCode === 'aborted') {
+                    this.message = 'No se pudo conectar con el servicio de reconocimiento de voz. Revisa tu conexión a internet.';
+                } else {
+                    this.message = 'No logro captar audio de tu micrófono. Revisa que no esté silenciado.';
+                }
+                this._play(this.message);
+                return;
+            }
+            const delay = Math.min(500 * this._restartAttempts, 3000);
             this._restartTimer = setTimeout(() => {
                 if (!this._wantsListen || this.listening) return;
                 try {
+                    this._sessionFinal = '';
+                    this._sessionInterim = '';
                     this.speechRecognition.start();
                     this.listening = true;
-                    this.message = 'Escuchando…';
                 } catch (e) {
                     this._restartTimer = null;
                 }
-            }, 500);
+            }, delay);
         },
 
-        _startSilenceWatchdog() {
-            this._clearSilence();
-            this._silenceTimer = setTimeout(() => {
-                // Sin reconocimiento en 15 s: ciclo de reinicio.
-                if (this._wantsListen && this.speechRecognition) {
-                    try { this.speechRecognition.stop(); } catch (e) { /* ignore */ }
-                }
-            }, 15000);
+        // Si no se detecta voz en unos segundos, se avisa y se repite la
+        // pregunta (con un nuevo pitido), en vez de escuchar en silencio.
+        _startNoResponseWatchdog() {
+            this._clearNoResponseWatchdog();
+            this._noResponseTimer = setTimeout(() => {
+                if (!this._wantsListen || this._hasHeardAnything) return;
+                this.stopListening();
+                this._play('No le escuché. ' + this.prompt, { listen: true });
+            }, NO_RESPONSE_TIMEOUT_MS);
         },
 
-        _clearSilence() {
-            if (this._silenceTimer) { clearTimeout(this._silenceTimer); this._silenceTimer = null; }
+        _clearNoResponseWatchdog() {
+            if (this._noResponseTimer) { clearTimeout(this._noResponseTimer); this._noResponseTimer = null; }
+        },
+
+        // Techo absoluto que no se reinicia con ruido de fondo: evita que
+        // el asistente se quede "escuchando para siempre".
+        _startMaxListenCeiling() {
+            this._clearMaxListenCeiling();
+            this._maxListenTimer = setTimeout(() => this._forceFinalize(), MAX_LISTEN_CEILING_MS);
+        },
+
+        _clearMaxListenCeiling() {
+            if (this._maxListenTimer) { clearTimeout(this._maxListenTimer); this._maxListenTimer = null; }
+        },
+
+        _forceFinalize() {
+            this._maxListenTimer = null;
+            const text = this._bestTranscript();
+            const isEcho = text && this._looksLikeSelfEcho(normalizeVoiceText(text));
+            this.stopListening();
+            if (text && !isEcho) {
+                this._dispatchAnswer(text);
+                return;
+            }
+            this._play('No logré entenderle. ' + this.prompt, { listen: true });
         },
 
         _clearTimers() {
-            if (this._silenceTimer) { clearTimeout(this._silenceTimer); this._silenceTimer = null; }
+            this._clearNoResponseWatchdog();
+            this._clearMaxListenCeiling();
+            if (this._captureTimer) { clearTimeout(this._captureTimer); this._captureTimer = null; }
             if (this._restartTimer) { clearTimeout(this._restartTimer); this._restartTimer = null; }
         },
 
-        _sendOrRetry(text) {
-            const final = text.trim().replace(/\s+/g, ' ').toLowerCase();
-            const confidence = this._lastConfidence ?? 1;
-            if (final && confidence < 0.45) {
-                this.message = 'No estoy muy seguro de haber entendido. Repítelo, por favor.';
-                this._scheduleRestart();
-                return;
+        // ---------------------------------------------------------------
+        // Comunicación con el backend
+        // ---------------------------------------------------------------
+        async _get(url) {
+            try {
+                const res = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                this._applyStep(await res.json());
+            } catch (e) {
+                this._serverError();
             }
-            this.send(text);
         },
 
-        // ---------------------------------------------------------------
-        // Envío al backend
-        // ---------------------------------------------------------------
-        async send(text) {
-            if (!this.running) return;
-            this.message = '';
+        async _post(url, body) {
             try {
-                const res = await fetch(this.$root.dataset.processRoute, {
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': this.$root.querySelector('meta[name=csrf-token]').content,
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
                     },
-                    body: JSON.stringify({ transcript: text }),
+                    body: JSON.stringify(body),
                 });
-                const data = await res.json();
-                if (data.type === 'exited') {
-                    this.running = false;
-                    this.phase = 'exited';
-                    this.program = data.message;
-                    this._play(data.message, { listen: false });
-                    return;
-                }
-                this._applyStep(data);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                this._applyStep(await res.json());
             } catch (e) {
-                this.message = 'Hubo un error de comunicación con el servidor.';
+                this._serverError();
             }
         },
 
-        sendTypeAnswer() {
+        _serverError() {
+            this.message = 'Hubo un error de comunicación con el servidor. Intentemos de nuevo.';
+            this._play(this.message + ' ' + this.prompt, { listen: !!this.prompt });
+        },
+
+        sendTypedAnswer() {
             const value = (this.typedAnswer || '').trim();
             if (!value || !this.running) return;
             this.typedAnswer = '';
-            this.send(value);
-        },
-
-        // ---------------------------------------------------------------
-        // Revisión y confirmación
-        // ---------------------------------------------------------------
-        async showReview() {
-            try {
-                const res = await fetch(this.$root.dataset.reviewRoute, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-                });
-                const data = await res.json();
-                this.phase = 'review';
-                const list = this.$root.querySelector('#review-list');
-                list.innerHTML = '';
-                for (const [key, value] of Object.entries(data.summary || {})) {
-                    const dt = document.createElement('dt');
-                    dt.className = 'font-semibold';
-                    dt.textContent = key + ':';
-                    const dd = document.createElement('dd');
-                    dd.textContent = value || '—';
-                    const div = document.createElement('div');
-                    div.className = 'flex gap-2';
-                    div.append(dt, dd);
-                    list.appendChild(div);
-                }
-                this.program = 'Revisa tus datos en pantalla o escucha el resumen. Luego crea tu contraseña y confirma.';
-                this._play('Revisa tus datos. Crea una contraseña de al menos 8 caracteres y presiona confirmar y crear cuenta.', { listen: false });
-            } catch (e) {
-                this.message = 'No se pudo cargar el resumen.';
-            }
-        },
-
-        async confirm() {
-            if (this.password.length < 8) {
-                this.message = 'La contraseña debe tener al menos 8 caracteres.';
-                this._play(this.message, { listen: false });
-                return;
-            }
-            try {
-                const res = await fetch(this.$root.dataset.confirmRoute, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': this.$root.querySelector('meta[name=csrf-token]').content,
-                    },
-                    body: JSON.stringify({ password: this.password }),
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.message = '¡Tu cuenta fue creada!';
-                    this._play('Tu cuenta fue creada correctamente. Bienvenida o bienvenido a SONARA.', { listen: false });
-                    setTimeout(() => { window.location.href = data.redirect; }, 2500);
-                } else {
-                    this.message = data.message || 'Ocurrió un error al crear la cuenta.';
-                    this._play(this.message, { listen: false });
-                }
-            } catch (e) {
-                this.message = 'Ocurrió un error al crear la cuenta.';
-            }
+            this.stopListening();
+            this._dispatchAnswer(value);
         },
 
         // ---------------------------------------------------------------
         // Síntesis de voz
         // ---------------------------------------------------------------
-        _play(text, { listen = false } = {}) {
-            if (typeof window === 'undefined' || !this._synth) return;
+        _play(text, { listen = false, then = null } = {}) {
+            if (!this._synth) {
+                if (then) then();
+                return;
+            }
             this.stopSpeak();
+            this._lastSpokenNormalized = normalizeVoiceText(String(text));
             const u = new SpeechSynthesisUtterance(String(text));
-            const voice = this._pickVoice('es');
+            const voice = pickBestSpanishVoice(this._synth, 'es');
             const prefs = readVoicePrefs();
             u.lang = (voice && voice.lang) || 'es-419';
             u.rate = prefs.rate;
             u.pitch = prefs.pitch;
             u.volume = prefs.volume;
             if (voice) u.voice = voice;
-            if (listen) {
-                u.onend = () => this.startListening();
-                u.onerror = () => this.startListening();
-            }
+            const after = () => {
+                if (listen) this.startListening();
+                if (then) then();
+            };
+            u.onend = after;
+            u.onerror = (e) => {
+                // El navegador bloqueó la voz por falta de un gesto previo:
+                // se espera la primera tecla o clic y se repite el mensaje.
+                if (e && e.error === 'not-allowed') {
+                    this._waitForGestureThenReplay(text, { listen, then });
+                    return;
+                }
+                if (e && (e.error === 'interrupted' || e.error === 'canceled')) return;
+                after();
+            };
+            // Referencia viva: Chrome puede descartar el enunciado y no
+            // disparar nunca "onend", lo que dejaría el flujo detenido.
+            this._utterance = u;
             this._synth.speak(u);
         },
 
-        speak(text) {
-            this._play(text, { listen: false });
-        },
-
-        _pickVoice(langPrefix) {
-            return pickBestSpanishVoice(this._synth, langPrefix);
+        _waitForGestureThenReplay(text, options) {
+            this.blocked = true;
+            const trigger = () => {
+                document.removeEventListener('keydown', trigger, true);
+                document.removeEventListener('click', trigger, true);
+                this.blocked = false;
+                this._play(text, options);
+            };
+            document.addEventListener('keydown', trigger, true);
+            document.addEventListener('click', trigger, true);
         },
 
         stopSpeak() {
             if (this._synth) this._synth.cancel();
         },
 
-        // ---------------------------------------------------------------
-        // Comandos del usuario
-        // ---------------------------------------------------------------
-        goBack() { this.send('volver'); },
-        help() {
-            this.message = 'Puedes decir: repetir, volver, corregir, continuar, ayuda, salir o cancelar. O escribe tu respuesta directamente.';
-            this._play(this.message, { listen: false });
+        // Botones: equivalentes a decir "repetir" / "atrás".
+        repeat() {
+            this.stopListening();
+            this._play(this.program, { listen: true });
         },
-        exit() { this.send('salir'); },
+        goBack() {
+            this.stopListening();
+            this._dispatchAnswer('atras');
+        },
 
         destroy() {
             this.stopListening();
