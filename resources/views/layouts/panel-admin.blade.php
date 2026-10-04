@@ -9,6 +9,7 @@
         ['url' => route('admin.publications.index'), 'label' => 'Publicaciones', 'icon' => 'box', 'active' => 'admin.publications.*'],
         ['url' => route('admin.categories.index'), 'label' => 'Categorías', 'icon' => 'grid', 'active' => 'admin.categories.*'],
         ['url' => route('admin.subcategories.index'), 'label' => 'Subcategorías', 'icon' => 'tag', 'active' => 'admin.subcategories.*'],
+        ['url' => route('admin.catalogs.index'), 'label' => 'Catálogos', 'icon' => 'clipboard', 'active' => 'admin.catalogs.*'],
         ['url' => route('admin.requests'), 'label' => 'Solicitudes', 'icon' => 'clipboard', 'active' => 'admin.requests'],
         ['url' => route('admin.assistance.index'), 'label' => 'Asistencia', 'icon' => 'chat', 'active' => 'admin.assistance.*'],
         ['url' => route('admin.audit.index'), 'label' => 'Auditoría', 'icon' => 'document', 'active' => 'admin.audit.*'],

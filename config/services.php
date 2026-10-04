@@ -45,6 +45,33 @@ return [
         'period_days' => (int) env('AI_PERIOD_DAYS', 30),
     ],
 
+    // Imagen del anuncio con Google Gemini (Interactions API). La clave solo
+    // se lee del entorno; nunca va en el código ni en la URL de la petición.
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'image_model' => env('GEMINI_IMAGE_MODEL', 'gemini-3.1-flash-lite-image'),
+        'project_name' => env('GEMINI_PROJECT_NAME'),
+        'project_number' => env('GEMINI_PROJECT_NUMBER'),
+        'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/interactions',
+        'timeout' => (int) env('GEMINI_TIMEOUT', 90),
+    ],
+
+    // Servidor externo de generación de imágenes del anuncio. Sin URL se
+    // usa el proveedor local de AI_PROVIDER (mock/pollinations/...).
+    'image_server' => [
+        'url' => env('IMAGE_SERVER_URL'),
+        'api_key' => env('IMAGE_SERVER_API_KEY'),
+        'timeout' => (int) env('IMAGE_SERVER_TIMEOUT', 120),
+    ],
+
+    // Web externa donde se publica el anuncio. Sin URL el anuncio queda
+    // publicado solo en el portal de SONARA.
+    'publish_web' => [
+        'url' => env('PUBLISH_WEB_URL'),
+        'api_key' => env('PUBLISH_WEB_API_KEY'),
+        'timeout' => (int) env('PUBLISH_WEB_TIMEOUT', 30),
+    ],
+
     'voice' => [
         'stt_provider' => env('STT_PROVIDER', 'browser'),
         'stt_api_key' => env('STT_API_KEY'),

@@ -61,10 +61,10 @@ class EntrepreneurVoiceMenuTest extends TestCase
     public static function commands(): array
     {
         return [
-            'registrar exacto' => ['registrar un nuevo emprendimiento', 'entrepreneur.businesses.create'],
-            'registrar natural' => ['Quiero registrar un emprendimiento', 'entrepreneur.businesses.create'],
-            'nuevo' => ['nuevo emprendimiento', 'entrepreneur.businesses.create'],
-            'opcion uno' => ['la uno', 'entrepreneur.businesses.create'],
+            'registrar exacto' => ['registrar un nuevo emprendimiento', 'entrepreneur.businesses.voice'],
+            'registrar natural' => ['Quiero registrar un emprendimiento', 'entrepreneur.businesses.voice'],
+            'nuevo' => ['nuevo emprendimiento', 'entrepreneur.businesses.voice'],
+            'opcion uno' => ['la uno', 'entrepreneur.businesses.voice'],
             'ver emprendimientos' => ['ver mis emprendimientos', 'entrepreneur.businesses.index'],
             'mayusculas' => ['VER MIS EMPRENDIMIENTOS.', 'entrepreneur.businesses.index'],
             'opcion dos' => ['dos', 'entrepreneur.businesses.index'],

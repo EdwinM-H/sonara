@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Publication extends Model
 {
@@ -93,9 +94,27 @@ class Publication extends Model
         return in_array($newStatus, self::TRANSITIONS[$this->status] ?? [], true);
     }
 
+    public static function uniqueSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'publicacion';
+        $slug = $base;
+        $i = 1;
+
+        while (static::where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$i++;
+        }
+
+        return $slug;
+    }
+
     public function getPriceDisplayAttribute(): string
     {
         $currency = $this->currency === 'PEN' ? 'S/' : $this->currency;
+        // Sin monto numérico (anuncios registrados por voz): el precio
+        // dictado, o "Precio a consultar" en lugar de un engañoso "S/ 0.00".
+        if ($this->price === null && $this->price_min === null && $this->price_max === null) {
+            return $this->business?->price_text ?: 'Precio a consultar';
+        }
         if ($this->price !== null) {
             return $currency.' '.number_format($this->price, 2);
         }

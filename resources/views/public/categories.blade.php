@@ -16,7 +16,7 @@
                 <h2 id="cat-{{ $category->id }}" class="text-lg font-display font-bold flex items-center gap-3">
                     <span class="grid place-items-center w-12 h-12 rounded-2xl text-xl" style="background: var(--color-lavender)" aria-hidden="true">{{ $category->icon }}</span>
                     {{ $category->name }}
-                    <span class="badge badge-neutral">{{ $category->businesses_count }}</span>
+                    <span class="badge badge-neutral">{{ $category->visible_publications_count }}</span>
                 </h2>
                 <a href="{{ route('public.explore').'?category='.$category->id }}" class="link-all">
                     Ver todo <x-icon name="arrow-right" class="w-4 h-4" />

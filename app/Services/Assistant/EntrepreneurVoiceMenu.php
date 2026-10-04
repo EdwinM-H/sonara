@@ -27,7 +27,7 @@ class EntrepreneurVoiceMenu
         // "registrar un nuevo emprendimiento" también contiene
         // "emprendimiento": se revisa antes que "ver mis emprendimientos".
         if ($has('registrar', 'registro', 'nuevo', 'nueva', 'crear', 'agregar', 'uno', '1', 'primera', 'primero')) {
-            return $this->go('Muy bien, vamos a registrar un nuevo emprendimiento.', 'entrepreneur.businesses.create');
+            return $this->go('Muy bien, vamos a registrar un nuevo emprendimiento.', 'entrepreneur.businesses.voice');
         }
 
         if ($has('solicitud', 'solicitudes', 'pedido', 'pedidos', 'tres', '3', 'tercera', 'tercero')) {

@@ -130,7 +130,7 @@
                    class="card card-body !p-5 text-center shrink-0 w-36 sm:w-auto card-hover u-fade-up">
                     <span class="grid place-items-center w-14 h-14 mx-auto rounded-2xl text-2xl" style="background: var(--color-lavender)" aria-hidden="true">{{ $category->icon }}</span>
                     <p class="mt-3 font-display font-bold text-base">{{ $category->name }}</p>
-                    <p class="mono-label mt-1">{{ $category->businesses_count }} {{ $category->businesses_count === 1 ? 'negocio' : 'negocios' }}</p>
+                    <p class="mono-label mt-1">{{ $category->visible_publications_count }} {{ $category->visible_publications_count === 1 ? 'publicación' : 'publicaciones' }}</p>
                 </a>
             @empty
                 <p class="text-gray-600">Próximamente más categorías.</p>

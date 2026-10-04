@@ -64,12 +64,17 @@ class VoiceRegistrationController extends Controller
         $this->createAccount($data, $username);
         $this->assistant->resetSession();
 
+        $message = fn (string $pin) => 'Perfecto, se creó la cuenta. '
+            .'Su usuario es: '.$username.'. '
+            .'Su PIN es: '.$pin.'. '
+            .'Ahora le mandaremos a la pantalla de login donde deberá ingresar con las credenciales que se le dieron.';
+
         return response()->json([
             'type' => 'registered',
-            'speak' => 'Perfecto, se creó la cuenta. '
-                .'Su usuario es: '.$username.'. '
-                .'Su PIN es: '.SpokenDigits::spaceOut($data['pin']).'. '
-                .'Ahora le mandaremos a la pantalla de login donde deberá ingresar con las credenciales que se le dieron.',
+            // El PIN se dice en voz alta (única vez que se comunica) pero
+            // en pantalla se muestra enmascarado.
+            'speak' => $message(SpokenDigits::spaceOut($data['pin'])),
+            'display' => $message('* * * *'),
             'redirect' => route('voice-login.index'),
         ]);
     }

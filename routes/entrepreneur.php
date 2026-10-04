@@ -3,6 +3,7 @@
 use App\Http\Controllers\EntrepreneurController;
 use App\Http\Controllers\EntrepreneurVoiceController;
 use App\Http\Controllers\BusinessController;
+use App\Http\Controllers\BusinessVoiceController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\AIFlyerController;
 use App\Http\Controllers\EntrepreneurRequestController;
@@ -26,6 +27,13 @@ Route::middleware(['auth', 'active', 'role:entrepreneur'])->prefix('emprendedor'
     // Emprendimientos
     Route::get('/emprendimientos', [BusinessController::class, 'index'])->name('businesses.index');
     Route::get('/emprendimientos/crear', [BusinessController::class, 'create'])->name('businesses.create');
+
+    // Registro de emprendimiento por voz + publicación del anuncio
+    Route::get('/emprendimientos/voz', [BusinessVoiceController::class, 'index'])->name('businesses.voice');
+    Route::get('/emprendimientos/voz/iniciar', [BusinessVoiceController::class, 'start'])->name('businesses.voice.start');
+    Route::get('/emprendimientos/voz/retomar', [BusinessVoiceController::class, 'resume'])->name('businesses.voice.resume');
+    Route::post('/emprendimientos/voz/respuesta', [BusinessVoiceController::class, 'process'])->name('businesses.voice.process');
+    Route::post('/emprendimientos/{business}/publicar', [BusinessVoiceController::class, 'publish'])->name('businesses.voice.publish');
     Route::post('/emprendimientos', [BusinessController::class, 'store'])->name('businesses.store');
     Route::get('/emprendimientos/{business}/editar', [BusinessController::class, 'edit'])->name('businesses.edit');
     Route::patch('/emprendimientos/{business}', [BusinessController::class, 'update'])->name('businesses.update');

@@ -8,7 +8,6 @@ use App\Models\Category;
 use App\Models\Subcategory;
 use App\Services\Audit\AuditService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class BusinessController extends Controller
 {
@@ -43,7 +42,7 @@ class BusinessController extends Controller
         $business = Business::create([
             'entrepreneur_profile_id' => $profile->id,
             'name' => $validated['name'],
-            'slug' => $this->uniqueSlug($validated['name']),
+            'slug' => Business::uniqueSlug($validated['name']),
             'description' => $validated['description'] ?? null,
             'category_id' => $validated['category_id'] ?? null,
             'subcategory_id' => $validated['subcategory_id'] ?? null,
@@ -183,18 +182,5 @@ class BusinessController extends Controller
                 ],
             );
         }
-    }
-
-    protected function uniqueSlug(string $name): string
-    {
-        $base = Str::slug($name);
-        $slug = $base;
-        $i = 1;
-
-        while (Business::where('slug', $slug)->exists()) {
-            $slug = $base.'-'.$i++;
-        }
-
-        return $slug;
     }
 }

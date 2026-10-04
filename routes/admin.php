@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\EntrepreneurManagementController;
 use App\Http\Controllers\BusinessViewController;
 use App\Http\Controllers\PublicationReviewController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CategoryManagementController;
 use App\Http\Controllers\AssistanceController;
 use App\Http\Controllers\AuditController;
@@ -57,6 +58,15 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->name('admi
     Route::get('/categorias/{category}/editar', [CategoryManagementController::class, 'edit'])->name('categories.edit');
     Route::patch('/categorias/{category}', [CategoryManagementController::class, 'update'])->name('categories.update');
     Route::delete('/categorias/{category}', [CategoryManagementController::class, 'destroy'])->name('categories.destroy');
+
+    // Catálogos (sectores, etiquetas y los que el admin agregue)
+    Route::get('/catalogos', [CatalogController::class, 'index'])->name('catalogs.index');
+    Route::post('/catalogos', [CatalogController::class, 'storeType'])->name('catalogs.store');
+    Route::get('/catalogos/{type}', [CatalogController::class, 'show'])->name('catalogs.show');
+    Route::delete('/catalogos/{type}', [CatalogController::class, 'destroyType'])->name('catalogs.destroy');
+    Route::post('/catalogos/{type}/opciones', [CatalogController::class, 'storeOption'])->name('catalogs.options.store');
+    Route::patch('/catalogos/{type}/opciones/{option}', [CatalogController::class, 'updateOption'])->name('catalogs.options.update');
+    Route::delete('/catalogos/{type}/opciones/{option}', [CatalogController::class, 'destroyOption'])->name('catalogs.options.destroy');
 
     // Subcategorías
     Route::get('/subcategorias', [CategoryManagementController::class, 'subcategories'])->name('subcategories.index');

@@ -8,6 +8,8 @@
  *    WhatsApp, PIN) y, al terminar, redirección al login.
  *  - login: usuario (nombre completo) + PIN y redirección al dashboard.
  *  - dashboard: menú por voz del dashboard de emprendedor.
+ *  - business: registro de un emprendimiento (con opciones de los
+ *    catálogos del admin) y, al terminar, publicación del anuncio.
  *
  * Reglas que gobiernan este archivo:
  *  - Todo mensaje nuevo se dice en voz alta, no solo en pantalla.
@@ -29,7 +31,7 @@ export function registerVoiceAssistant() {
         running: false,
         listening: false,
         blocked: false,
-        mode: 'register', // register | login | dashboard
+        mode: 'register', // register | login | dashboard | business
         field: null,
         index: 0,
         total: 0,
@@ -42,6 +44,7 @@ export function registerVoiceAssistant() {
         hasSession: false,
         speechRecognition: null,
         _synth: null,
+        _spoken: '',
         _utterance: null,
         _priorText: '',
         _sessionFinal: '',
@@ -130,7 +133,10 @@ export function registerVoiceAssistant() {
         },
 
         _applyStep(data) {
-            this.program = data.speak || '';
+            // En pantalla se muestra "display" si viene (p. ej. con el PIN
+            // enmascarado); en voz alta siempre se dice "speak".
+            this.program = data.display || data.speak || '';
+            this._spoken = data.speak || '';
             this.message = '';
             if (data.field !== undefined) this.field = data.field;
             if (data.index) { this.index = data.index; this.total = data.total; }
@@ -138,16 +144,28 @@ export function registerVoiceAssistant() {
             switch (data.type) {
                 case 'question':
                     this.prompt = data.prompt || data.speak;
-                    this._play(this.program, { listen: true });
+                    this._play(this._spoken, { listen: true });
                     break;
                 case 'registered':
                 case 'success':
                 case 'navigate':
-                    this._play(this.program, { then: () => { window.location.href = data.redirect; } });
+                    this._play(this._spoken, { then: () => { window.location.href = data.redirect; } });
                     break;
+                case 'working': {
+                    // El servidor sigue trabajando (generar la imagen y
+                    // publicar): se avisa por voz y, cuando terminan la
+                    // locución y la petición, se aplica el siguiente paso.
+                    this.prompt = '';
+                    const spoken = new Promise((resolve) => this._play(this._spoken, { then: resolve }));
+                    const result = this._postJson(data.next, {});
+                    Promise.all([spoken, result])
+                        .then(([, next]) => this._applyStep(next))
+                        .catch(() => this._serverError());
+                    break;
+                }
                 default: // exited, locked
                     this.running = false;
-                    this._play(this.program);
+                    this._play(this._spoken);
             }
         },
 
@@ -222,7 +240,7 @@ export function registerVoiceAssistant() {
             this._clearNoResponseWatchdog();
 
             const best = this._bestTranscript();
-            if (best) this.message = 'He escuchado: "' + normalizeVoiceText(best) + '".';
+            if (best) this.message = this._heard(normalizeVoiceText(best));
 
             this._scheduleCapture();
         },
@@ -285,7 +303,7 @@ export function registerVoiceAssistant() {
                 this._play('No le entendí. ' + this.prompt, { listen: true });
                 return;
             }
-            this.message = 'He escuchado: "' + normalized + '".';
+            this.message = this._heard(normalized);
             this._post(this.$root.dataset.processRoute, { transcript: normalized });
         },
 
@@ -440,23 +458,32 @@ export function registerVoiceAssistant() {
             }
         },
 
+        // El PIN nunca se muestra en pantalla, ni siquiera lo escuchado.
+        _heard(normalized) {
+            return 'He escuchado: "' + (this.field === 'pin' ? '* * * *' : normalized) + '".';
+        },
+
         async _post(url, body) {
             try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                    },
-                    body: JSON.stringify(body),
-                });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                this._applyStep(await res.json());
+                this._applyStep(await this._postJson(url, body));
             } catch (e) {
                 this._serverError();
             }
+        },
+
+        async _postJson(url, body) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
         },
 
         _serverError() {
@@ -530,7 +557,7 @@ export function registerVoiceAssistant() {
         // Botones: equivalentes a decir "repetir" / "atrás".
         repeat() {
             this.stopListening();
-            this._play(this.program, { listen: true });
+            this._play(this._spoken || this.program, { listen: true });
         },
         goBack() {
             this.stopListening();

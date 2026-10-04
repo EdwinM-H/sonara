@@ -33,8 +33,10 @@ class GoogleImageProvider implements ImageGenerationProvider
             $fullPrompt .= "\n\nEstilo visual: {$style}";
         }
 
+        // La clave va en cabecera: en la URL podría aparecer en mensajes de error y logs.
         $response = Http::timeout(120)
-            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
+            ->withHeaders(['x-goog-api-key' => $apiKey])
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'contents' => [
                     ['parts' => [['text' => $fullPrompt]]],
                 ],

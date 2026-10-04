@@ -46,6 +46,13 @@
                     <dd>{{ $publication->business->location_summary }}</dd>
                 </div>
             @endif
+            @if ($publication->business?->schedule_text || $publication->business?->hours->isNotEmpty())
+                <div class="flex items-center gap-1.5">
+                    <dt class="sr-only">Horario</dt>
+                    <x-icon name="clock" class="w-4 h-4 text-purple-500 shrink-0" />
+                    <dd>{{ $publication->business->schedule_summary }}</dd>
+                </div>
+            @endif
         </dl>
 
         <div class="mt-auto pt-3">

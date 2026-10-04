@@ -13,6 +13,9 @@ class UserSeeder extends Seeder
 {
     public const DEMO_PASSWORD = 'Password123!';
 
+    // PIN del login por voz de los emprendedores demo (se guarda hasheado).
+    public const DEMO_PIN = '1234';
+
     public function run(): void
     {
         // ------------------------------------------------ Administrador
@@ -37,18 +40,22 @@ class UserSeeder extends Seeder
                 'first_name' => 'Ana',
                 'last_name' => 'Huamán',
                 'name' => 'Ana Huamán',
+                'username' => 'ana huaman',
                 'phone' => '999000002',
                 'password' => Hash::make(self::DEMO_PASSWORD),
                 'email_verified_at' => now(),
                 'status' => User::STATUS_ACTIVO,
             ],
         );
+        $entrepreneur->voice_pin = self::DEMO_PIN; // cast "hashed" → bcrypt
+        $entrepreneur->save();
         $entrepreneur->syncRoles(['entrepreneur']);
 
         EntrepreneurProfile::updateOrCreate(
             ['user_id' => $entrepreneur->id],
             [
                 'personal_description' => 'Emprendedora con más de 5 años elaborando productos artesanales textiles.',
+                'location' => 'cusco',
                 'verification_status' => EntrepreneurProfile::VERIF_APROBADO,
                 'document_deadline_at' => null,
                 'validation_deadline_at' => null,

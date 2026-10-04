@@ -8,7 +8,10 @@ use App\Models\EntrepreneurProfile;
 use App\Models\Publication;
 use App\Models\User;
 use App\Notifications\VerificationStatusNotification;
+use App\Services\Assistant\VoiceAssistantService;
+use App\Services\Assistant\VoiceText;
 use App\Services\Audit\AuditService;
+use App\Services\Verification\EntrepreneurRecordValidator;
 use App\Services\Verification\VerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +24,7 @@ class EntrepreneurManagementController extends Controller
     public function __construct(
         protected VerificationService $verification,
         protected AuditService $audit,
+        protected EntrepreneurRecordValidator $recordValidator,
     ) {
     }
 
@@ -31,7 +35,9 @@ class EntrepreneurManagementController extends Controller
             ->latest()
             ->paginate(15);
 
-        return view('admin.entrepreneurs.index', compact('entrepreneurs'));
+        $validator = $this->recordValidator;
+
+        return view('admin.entrepreneurs.index', compact('entrepreneurs', 'validator'));
     }
 
     public function create()
@@ -110,18 +116,33 @@ class EntrepreneurManagementController extends Controller
             'email' => ['required', 'email', 'max:190', 'unique:users,email,'.$user->id],
             'phone' => ['nullable', 'string', 'max:30'],
             'personal_description' => ['nullable', 'string', 'max:2000'],
+            'location' => ['nullable', 'string', 'max:150'],
         ]);
+
+        // Las cuentas con PIN entran por voz con su nombre completo
+        // normalizado: si cambia el nombre, cambia también el usuario.
+        $username = $user->username;
+        if ($user->hasVoicePin()) {
+            $username = VoiceAssistantService::usernameFor($validated['first_name'], $validated['last_name']);
+            if (User::where('username', $username)->whereKeyNot($user->id)->exists()) {
+                return back()->withInput()->withErrors([
+                    'first_name' => 'Ya existe otra cuenta con el usuario de voz "'.$username.'".',
+                ]);
+            }
+        }
 
         $user->update([
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'name' => trim($validated['first_name'].' '.$validated['last_name']),
+            'username' => $username,
             'email' => $validated['email'],
             'phone' => $validated['phone'],
         ]);
 
         $user->entrepreneurProfile->update([
             'personal_description' => $validated['personal_description'] ?? null,
+            'location' => isset($validated['location']) ? VoiceText::normalize($validated['location']) : null,
         ]);
 
         $this->audit->log('entrepreneur_updated', User::class, $user->id, 'Emprendedor '.$user->name.' actualizado.');

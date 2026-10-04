@@ -70,16 +70,19 @@ class DemoDataSeeder extends Seeder
                 'first_name' => 'José',
                 'last_name' => 'Condori',
                 'name' => 'José Condori',
+                'username' => 'jose condori',
                 'phone' => '999777888',
                 'password' => UserSeeder::DEMO_PASSWORD,
                 'email_verified_at' => now(),
             ],
         );
+        $extraEntrepreneur->voice_pin = UserSeeder::DEMO_PIN; // cast "hashed" → bcrypt
+        $extraEntrepreneur->save();
         $extraEntrepreneur->syncRoles(['entrepreneur']);
 
         $extraProfile = EntrepreneurProfile::updateOrCreate(
             ['user_id' => $extraEntrepreneur->id],
-            ['personal_description' => 'Emprendedor textil.'],
+            ['personal_description' => 'Emprendedor textil.', 'location' => 'cusco'],
         );
 
         $textilBusiness = Business::updateOrCreate(

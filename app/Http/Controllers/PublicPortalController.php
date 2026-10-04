@@ -12,16 +12,16 @@ class PublicPortalController extends Controller
     public function home()
     {
         $categories = Category::where('is_active', true)
-            ->withCount(['businesses' => fn ($q) => $q->where('status', 'activo')])
+            ->withCount('visiblePublications')
             ->orderBy('sort_order')->take(12)->get();
 
-        $featured = Publication::with(['business.category', 'business.entrepreneurProfile.user'])
+        $featured = Publication::with(['business.category', 'business.hours', 'business.entrepreneurProfile.user'])
             ->where('status', Publication::STATUS_PUBLICADA)
             ->whereNotNull('flyer_image')
             ->latest('published_at')
             ->take(6)->get();
 
-        $verified = Publication::with(['business.category', 'business.entrepreneurProfile.user'])
+        $verified = Publication::with(['business.category', 'business.hours', 'business.entrepreneurProfile.user'])
             ->where('status', Publication::STATUS_PUBLICADA)
             ->whereHas('business', function ($q) {
                 $q->where('status', 'activo')->whereHas('entrepreneurProfile', fn ($p) => $p->where('verification_status', 'aprobado'));
@@ -38,7 +38,7 @@ class PublicPortalController extends Controller
 
     public function explore(Request $request)
     {
-        $query = Publication::query()->with(['business.category', 'business.entrepreneurProfile.user'])
+        $query = Publication::query()->with(['business.category', 'business.hours', 'business.entrepreneurProfile.user'])
             ->where('status', Publication::STATUS_PUBLICADA)
             ->whereHas('business', fn ($q) => $q->where('status', 'activo'));
 
@@ -112,7 +112,7 @@ class PublicPortalController extends Controller
     {
         $categories = Category::where('is_active', true)
             ->with(['subcategories' => fn ($q) => $q->where('is_active', true)])
-            ->withCount('businesses')
+            ->withCount('visiblePublications')
             ->orderBy('sort_order')->get();
 
         return view('public.categories', compact('categories'));
@@ -122,7 +122,7 @@ class PublicPortalController extends Controller
     {
         abort_if(! $category->is_active, 404);
 
-        $publications = Publication::with(['business.category', 'business.entrepreneurProfile.user'])
+        $publications = Publication::with(['business.category', 'business.hours', 'business.entrepreneurProfile.user'])
             ->where('status', Publication::STATUS_PUBLICADA)
             ->whereHas('business', fn ($q) => $q->where('status', 'activo')->where('category_id', $category->id))
             ->latest('published_at')

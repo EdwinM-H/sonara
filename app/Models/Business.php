@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Business extends Model
 {
@@ -15,6 +16,10 @@ class Business extends Model
     public const STATUS_ACTIVO = 'activo';
     public const STATUS_INACTIVO = 'inactivo';
 
+    public const PUBLISH_PENDIENTE = 'pendiente';
+    public const PUBLISH_PUBLICADO = 'publicado';
+    public const PUBLISH_ERROR = 'error';
+
     protected $fillable = [
         'entrepreneur_profile_id',
         'name',
@@ -22,6 +27,9 @@ class Business extends Model
         'description',
         'category_id',
         'subcategory_id',
+        'custom_category',
+        'sector',
+        'tags',
         'type',
         'status',
         'availability',
@@ -29,6 +37,8 @@ class Business extends Model
         'price',
         'price_min',
         'price_max',
+        'price_text',
+        'schedule_text',
         'payment_methods',
         'country',
         'region',
@@ -41,12 +51,23 @@ class Business extends Model
         'phone',
         'whatsapp',
         'contact_email',
+        'image_prompt',
+        'image_url',
+        'image_pending',
+        'external_ad_id',
+        'external_ad_url',
+        'publish_status',
+        'publish_error',
+        'published_at',
     ];
 
     protected function casts(): array
     {
         return [
             'payment_methods' => 'array',
+            'tags' => 'array',
+            'published_at' => 'datetime',
+            'image_pending' => 'boolean',
             'price' => 'decimal:2',
             'price_min' => 'decimal:2',
             'price_max' => 'decimal:2',
@@ -73,6 +94,77 @@ class Business extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /** Publicación que muestra en el muro el anuncio del registro por voz. */
+    public function adPublication()
+    {
+        return $this->hasOne(Publication::class)->oldestOfMany();
+    }
+
+    /**
+     * Crea (o completa) la publicación del anuncio en estado publicada,
+     * para que el emprendimiento aparezca en el muro. Si la imagen aún no
+     * está lista, la tarjeta muestra el marcador de posición.
+     */
+    public function ensureAdPublication(): Publication
+    {
+        $publication = $this->adPublication ?? new Publication([
+            'business_id' => $this->id,
+            'slug' => Publication::uniqueSlug($this->name),
+        ]);
+
+        $publication->fill([
+            'entrepreneur_profile_id' => $this->entrepreneur_profile_id,
+            'name' => $this->name,
+            'description' => $this->description,
+            // Recién creado, el modelo aún no trae los valores por defecto de la tabla.
+            'type' => $this->type ?? self::TYPE_PRODUCTO,
+            'currency' => $this->currency ?? 'PEN',
+            'price' => $this->price,
+            'price_min' => $this->price_min,
+            'price_max' => $this->price_max,
+            'flyer_image' => $publication->flyer_image ?? self::localAssetPath($this->image_url),
+            'status' => Publication::STATUS_PUBLICADA,
+            'published_at' => $publication->published_at ?? now(),
+        ])->save();
+
+        $this->setRelation('adPublication', $publication);
+
+        return $publication;
+    }
+
+    /**
+     * Las vistas usan asset($ruta): una imagen de este mismo sitio se guarda
+     * como ruta relativa (sobrevive a cambios de dominio); una externa, tal cual.
+     */
+    protected static function localAssetPath(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+        $base = rtrim(asset(''), '/').'/';
+
+        return str_starts_with($url, $base) ? substr($url, strlen($base)) : $url;
+    }
+
+    public static function uniqueSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'emprendimiento';
+        $slug = $base;
+        $i = 1;
+
+        while (static::where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$i++;
+        }
+
+        return $slug;
+    }
+
+    /** Categoría del catálogo o, si se dictó un valor libre, ese valor. */
+    public function categoryLabel(): ?string
+    {
+        return $this->category?->name ?? $this->custom_category;
     }
 
     public function subcategory()
@@ -121,7 +213,7 @@ class Business extends Model
     {
         $hours = $this->hours;
         if ($hours->isEmpty()) {
-            return 'Horario no especificado';
+            return $this->schedule_text ?: 'Horario no especificado';
         }
 
         $open = $hours->first(fn ($h) => ! $h->is_closed && $h->open_time);
@@ -133,7 +225,7 @@ class Business extends Model
 
     public function getLocationSummaryAttribute(): string
     {
-        return collect([$this->district, $this->province, $this->region, $this->country])
+        return collect([$this->address, $this->district, $this->province, $this->region, $this->country])
             ->filter()
             ->implode(', ');
     }

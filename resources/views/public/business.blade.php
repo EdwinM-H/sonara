@@ -28,19 +28,33 @@
         <div class="card-body !p-5 sm:!p-8 sm:pt-4">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                 <div class="max-w-2xl">
-                    <p class="mono-label mb-2">{{ $business->category?->name }}</p>
+                    <p class="mono-label mb-2">{{ $business->categoryLabel() }}</p>
                     <h1 class="text-3xl sm:text-4xl font-display font-extrabold">{{ $business->name }}</h1>
                     <p class="mt-2 text-gray-600 flex items-center gap-1.5">
                         <x-icon name="tag" class="w-4 h-4 text-purple-500" />
-                        {{ $business->category?->name }}<span class="text-gray-300">·</span>{{ $business->subcategory?->name ?? 'General' }}
+                        {{ $business->categoryLabel() }}<span class="text-gray-300">·</span>{{ $business->subcategory?->name ?? ($business->sector ? 'Sector '.$business->sector : 'General') }}
+                        <span class="text-gray-300">·</span>{{ ucfirst($business->type) }}
                     </p>
                     <p class="mt-4 text-gray-700 leading-relaxed">{{ $business->description }}</p>
+                    @if ($business->tags)
+                        <ul class="mt-3 flex flex-wrap gap-2" aria-label="Etiquetas">
+                            @foreach ($business->tags as $tag)
+                                <li class="badge badge-neutral">#{{ $tag }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
 
                     <dl class="mt-5 space-y-2 text-sm text-gray-700">
                         <div class="flex items-center gap-2">
                             <dt class="sr-only">Precio de referencia</dt>
                             <x-icon name="credit-card" class="w-4 h-4 text-purple-500 shrink-0" />
-                            <dd class="font-bold text-purple-800 text-base">{{ $business->currency === 'PEN' ? 'S/' : $business->currency }} {{ $business->display_price }}</dd>
+                            <dd class="font-bold text-purple-800 text-base">
+                                @if ($business->display_price !== null)
+                                    {{ $business->currency === 'PEN' ? 'S/' : $business->currency }} {{ $business->display_price }}
+                                @else
+                                    {{ $business->price_text ?: 'Precio a consultar' }}
+                                @endif
+                            </dd>
                         </div>
                         <div class="flex items-center gap-2">
                             <dt class="sr-only">Ubicación</dt>

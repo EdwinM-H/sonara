@@ -61,7 +61,10 @@
                     </p>
                 @endif
                 <p class="badge badge-neutral">{{ ucfirst($publication->type) }}</p>
-                <p class="badge badge-draft">{{ $publication->business->category?->name ?? 'General' }}</p>
+                <p class="badge badge-draft">{{ $publication->business->categoryLabel() ?? 'General' }}</p>
+                @if ($publication->business->sector)
+                    <p class="badge badge-neutral">Sector: {{ $publication->business->sector }}</p>
+                @endif
             </div>
 
             <div>
@@ -71,6 +74,14 @@
 
             <p class="text-4xl font-display font-extrabold text-purple-600">{{ $publication->price_display }}</p>
             <p class="text-gray-700 leading-relaxed text-lg">{{ $publication->description }}</p>
+
+            @if ($publication->business->tags)
+                <ul class="flex flex-wrap gap-2" aria-label="Etiquetas">
+                    @foreach ($publication->business->tags as $tag)
+                        <li class="badge badge-neutral">#{{ $tag }}</li>
+                    @endforeach
+                </ul>
+            @endif
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="rounded-2xl p-5" style="background-color: var(--color-cream)">
@@ -117,7 +128,7 @@
             <div class="flex flex-wrap gap-3">
                 @if ($publication->business->phone)
                     <a href="tel:{{ $publication->business->phone }}" class="btn btn-secondary">
-                        <x-icon name="phone" class="w-5 h-5" /> Llamar
+                        <x-icon name="phone" class="w-5 h-5" /> Llamar al {{ $publication->business->phone }}
                     </a>
                 @endif
                 @if ($publication->business->whatsapp)

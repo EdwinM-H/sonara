@@ -29,6 +29,10 @@
                 <input type="tel" id="phone" name="phone" value="{{ old('phone', $user->phone) }}" class="input-text">
             </div>
             <div>
+                <label for="location" class="input-label">Ubicación</label>
+                <input type="text" id="location" name="location" value="{{ old('location', $user->entrepreneurProfile?->location) }}" maxlength="150" class="input-text">
+            </div>
+            <div>
                 <label for="personal_description" class="input-label">Descripción personal</label>
                 <textarea id="personal_description" name="personal_description" rows="3" class="input-text">{{ old('personal_description', $user->entrepreneurProfile?->personal_description) }}</textarea>
             </div>

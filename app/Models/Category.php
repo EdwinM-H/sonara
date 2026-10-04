@@ -25,4 +25,17 @@ class Category extends Model
     {
         return $this->hasMany(Business::class);
     }
+
+    public function publications()
+    {
+        return $this->hasManyThrough(Publication::class, Business::class);
+    }
+
+    /** Solo lo que el muro muestra: publicadas y de emprendimientos activos. */
+    public function visiblePublications()
+    {
+        return $this->publications()
+            ->where('publications.status', Publication::STATUS_PUBLICADA)
+            ->where('businesses.status', Business::STATUS_ACTIVO);
+    }
 }
