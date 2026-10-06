@@ -15,6 +15,7 @@ Route::get('/categorias', [PublicPortalController::class, 'categories'])->name('
 Route::get('/categorias/{category:slug}', [PublicPortalController::class, 'category'])->name('public.category');
 Route::get('/emprendimientos/{business:slug}', [PublicPortalController::class, 'business'])->name('public.business');
 Route::get('/publicaciones/{publication:slug}', [PublicPortalController::class, 'publication'])->name('public.publication');
+Route::get('/emprendedor/{profile}/perfil', [PublicPortalController::class, 'entrepreneur'])->whereNumber('profile')->name('public.entrepreneur');
 
 // ---------------------------------------------------------------------------
 // Solicitudes de clientes (requiere autenticación como cliente)

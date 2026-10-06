@@ -213,9 +213,10 @@ class SmokeTest extends TestCase
         $customer = $this->makeCustomer();
         $admin = $this->makeAdmin();
 
-        $this->actingAs($customer)->get(route('entrepreneur.dashboard'))->assertForbidden();
-        $this->actingAs($admin)->get(route('entrepreneur.dashboard'))->assertForbidden();
-        $this->actingAs($customer)->get(route('admin.dashboard'))->assertForbidden();
+        $this->actingAs($customer)->get(route('entrepreneur.dashboard'))->assertRedirect(route('login'));
+        $this->actingAs($admin)->get(route('entrepreneur.dashboard'))->assertRedirect(route('admin.dashboard'));
+        $this->actingAs($customer)->get(route('admin.dashboard'))->assertRedirect(route('login'));
+        $this->actingAs($customer)->getJson(route('entrepreneur.dashboard'))->assertForbidden();
     }
 
     public function test_suspended_user_is_blocked(): void

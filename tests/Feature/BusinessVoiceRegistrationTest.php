@@ -366,12 +366,12 @@ class BusinessVoiceRegistrationTest extends TestCase
         $this->registerAll();
 
         $prompt = app(AdPromptBuilder::class)->build(Business::firstOrFail());
-        $this->assertStringStartsWith('Create a professional and vibrant advertisement image for a business called "soluciones tecnicas rosa".', $prompt);
-        $this->assertStringContainsString('Category: Tecnología. Sector: Norte. Location: av el sol 123 cusco.', $prompt);
-        $this->assertStringContainsString('Description: reparacion de computadoras y celulares.', $prompt);
-        $this->assertStringContainsString('Price range: desde 10 dolares.', $prompt);
-        $this->assertStringContainsString('Hours: lunes a viernes de 8 a 5.', $prompt);
-        $this->assertStringContainsString('Keywords: Delivery, Hecho a mano.', $prompt);
+        $this->assertStringContainsString('- Business name: "soluciones tecnicas rosa"', $prompt);
+        $this->assertStringContainsString("- Category: Tecnología\n- Sector / Zone: Norte — av el sol 123 cusco\n", $prompt);
+        $this->assertStringContainsString('- Description: "reparacion de computadoras y celulares"', $prompt);
+        $this->assertStringContainsString('- Price: desde 10 dolares', $prompt);
+        $this->assertStringContainsString('- Hours: lunes a viernes de 8 a 5', $prompt);
+        $this->assertStringContainsString('- Keywords / tags: Delivery, Hecho a mano', $prompt);
     }
 
     public function test_end_to_end_publishes_and_saves_everything(): void
@@ -389,7 +389,7 @@ class BusinessVoiceRegistrationTest extends TestCase
         $this->assertSame(route('entrepreneur.dashboard'), $done['redirect']);
 
         $business = Business::firstOrFail();
-        $this->assertStringStartsWith('Create a professional and vibrant advertisement image for a business called', $business->image_prompt);
+        $this->assertStringStartsWith('Design a professional, eye-catching advertising flyer for a business.', $business->image_prompt);
         $this->assertSame(self::IMAGE_URL, $business->image_url);
         $this->assertSame('AD-777', $business->external_ad_id);
         $this->assertSame('https://anuncios.test/tecnologia/norte/AD-777', $business->external_ad_url);

@@ -163,7 +163,7 @@ class VoiceLoginTest extends TestCase
             new \App\Services\Assistant\VoiceAssistantService('voice-reg-e2e')
         );
         $this->getJson(route('voice-registration.start'));
-        foreach (['Luis', 'Huamán Torres', 'Hago cerámica', 'Pisac', '984111222', 'cuatro cuatro uno uno'] as $answer) {
+        foreach (['Luis', 'Huamán Torres', '41112233', 'severa', 'si', '7788', 'Hago cerámica', 'Pisac', '984111222', 'cuatro cuatro uno uno'] as $answer) {
             $last = $this->postJson(route('voice-registration.process'), ['transcript' => $answer])->json();
         }
         $this->assertSame('registered', $last['type']);

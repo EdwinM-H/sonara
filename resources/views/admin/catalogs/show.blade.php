@@ -24,7 +24,7 @@
         @error('name')<p class="error-message mt-2" role="alert">{{ $message }}</p>@enderror
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
         <table class="table table-auto">
             <thead>
                 <tr>

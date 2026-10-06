@@ -105,6 +105,12 @@ class VoiceRegistrationController extends Controller
 
             $profile = EntrepreneurProfile::create([
                 'user_id' => $user->id,
+                'dni' => $data['dni'],
+                'grado_discapacidad' => $data['grado_discapacidad'],
+                'tiene_carnet_conadis' => $data['tiene_carnet_conadis'],
+                // Si dijo que sí, luego volvió atrás y respondió que no, se
+                // descarta el número que había dado.
+                'numero_carnet_conadis' => $data['tiene_carnet_conadis'] ? ($data['numero_carnet_conadis'] ?? null) : null,
                 'personal_description' => $data['sobre_mi'],
                 'location' => $data['ubicacion'],
             ]);

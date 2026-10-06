@@ -47,7 +47,7 @@
                         </td>
                         <td>
                             @if ($issues)
-                                <span class="badge bg-amber-100 text-amber-800"
+                                <span class="badge bg-purple-100 text-purple-800"
                                       title="{{ collect($issues)->map(fn ($p, $f) => \App\Services\Verification\EntrepreneurRecordValidator::FIELDS[$f].': '.$p)->implode(', ') }}">
                                     Incompleto ({{ count($issues) }})
                                 </span>

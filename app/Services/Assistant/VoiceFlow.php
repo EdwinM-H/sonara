@@ -41,6 +41,12 @@ abstract class VoiceFlow
 
     abstract protected function cachePrefix(): string;
 
+    /** Si el campo no aplica con las respuestas dadas (pregunta condicional). */
+    protected function skips(string $field, array $data): bool
+    {
+        return false;
+    }
+
     protected function intro(): string
     {
         return '';
@@ -105,7 +111,7 @@ abstract class VoiceFlow
 
                 return ['type' => 'exited', 'speak' => $this->exitMessage()];
             case 'back':
-                $previous = $this->previousStep($session['step']);
+                $previous = $this->previousStep($session['step'], $session['data']);
                 if ($previous === null) {
                     return $this->question($session, 'Esta es la primera pregunta. ');
                 }
@@ -141,7 +147,7 @@ abstract class VoiceFlow
             return $this->question($session, $result['note'].' ');
         }
 
-        $next = $this->nextStep($field);
+        $next = $this->nextStep($field, $session['data']);
         if ($next === null) {
             // No se guarda: la última respuesta solo viaja en la respuesta.
             return ['type' => 'complete', 'data' => $session['data']];
@@ -156,7 +162,7 @@ abstract class VoiceFlow
     protected function question(array $session, string $note = '', bool $replacePrompt = false): array
     {
         $steps = $this->steps();
-        $fields = array_keys($steps);
+        $fields = $this->activeFields($session['data']);
         $prompt = $steps[$session['step']];
 
         return [
@@ -169,20 +175,37 @@ abstract class VoiceFlow
         ];
     }
 
-    protected function nextStep(string $field): ?string
+    /** Campos que se preguntan con las respuestas dadas hasta ahora. */
+    protected function activeFields(array $data): array
     {
-        $fields = array_keys($this->steps());
-        $index = array_search($field, $fields, true);
-
-        return $fields[$index + 1] ?? null;
+        return array_values(array_filter(
+            array_keys($this->steps()),
+            fn (string $field) => ! $this->skips($field, $data),
+        ));
     }
 
-    protected function previousStep(string $field): ?string
+    protected function nextStep(string $field, array $data = []): ?string
     {
         $fields = array_keys($this->steps());
-        $index = array_search($field, $fields, true);
+        for ($i = array_search($field, $fields, true) + 1; $i < count($fields); $i++) {
+            if (! $this->skips($fields[$i], $data)) {
+                return $fields[$i];
+            }
+        }
 
-        return $index > 0 ? $fields[$index - 1] : null;
+        return null;
+    }
+
+    protected function previousStep(string $field, array $data = []): ?string
+    {
+        $fields = array_keys($this->steps());
+        for ($i = array_search($field, $fields, true) - 1; $i >= 0; $i--) {
+            if (! $this->skips($fields[$i], $data)) {
+                return $fields[$i];
+            }
+        }
+
+        return null;
     }
 
     protected function load(): ?array

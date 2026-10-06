@@ -8,7 +8,7 @@
                 </p>
                 <p class="mt-3 text-sm leading-relaxed">
                     Plataforma accesible para emprendedores con discapacidad visual.
-                    Promovemos la comercialización de productos y servicios inclusivos.
+                    Diseñada para navegar con voz, teclado y lectores de pantalla.
                 </p>
                 <div class="mt-4 flex flex-wrap gap-2">
                     <span class="badge badge-neutral !bg-slate-800 !text-slate-200">Inclusivo</span>
@@ -26,22 +26,21 @@
                 </ul>
             </nav>
 
-            <nav aria-label="Emprendedores">
-                <p class="font-bold text-white mb-3">Emprendedores</p>
+            <nav aria-label="Tu cuenta">
+                <p class="font-bold text-white mb-3">Tu cuenta</p>
                 <ul class="space-y-2.5 text-sm">
-                    <li><a href="{{ route('register') }}" class="hover:text-white inline-flex items-center gap-1.5">Crear cuenta</a></li>
-                    <li><a href="{{ route('voice-registration.index') }}" class="hover:text-white inline-flex items-center gap-1.5">Registro asistido por voz</a></li>
                     <li><a href="{{ route('login') }}" class="hover:text-white inline-flex items-center gap-1.5">Iniciar sesión</a></li>
+                    <li><a href="{{ route('register') }}" class="hover:text-white inline-flex items-center gap-1.5">Crear cuenta</a></li>
                 </ul>
             </nav>
 
-            <div>
-                <p class="font-bold text-white mb-3">Accesibilidad</p>
-                <p class="text-sm leading-relaxed">
-                    Diseñado para navegar con voz, teclado y lectores de pantalla.
-                    Botones grandes, alto contraste y fuentes legibles.
-                </p>
-            </div>
+            <nav aria-label="Emprendedores">
+                <p class="font-bold text-white mb-3">Emprendedores</p>
+                <ul class="space-y-2.5 text-sm">
+                    <li><a href="{{ route('voice-registration.index') }}" class="hover:text-white inline-flex items-center gap-1.5">Registro por voz</a></li>
+                    <li><a href="{{ route('voice-login.index') }}" class="hover:text-white inline-flex items-center gap-1.5">Ingresar por voz</a></li>
+                </ul>
+            </nav>
         </div>
 
         <p class="mt-10 border-t border-slate-800 pt-6 text-center text-xs text-slate-500">

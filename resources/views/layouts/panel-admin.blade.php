@@ -2,6 +2,7 @@
     'panel' => 'Panel de Administración',
     'sidebarItems' => [
         ['url' => route('admin.dashboard'), 'label' => 'Inicio', 'icon' => 'home', 'active' => 'admin.dashboard'],
+        ['url' => route('admin.stats'), 'label' => 'Estadísticas', 'icon' => 'chart', 'active' => 'admin.stats'],
         ['url' => route('admin.users'), 'label' => 'Usuarios', 'icon' => 'user', 'active' => 'admin.users'],
         ['url' => route('admin.entrepreneurs.index'), 'label' => 'Emprendedores', 'icon' => 'sparkles', 'active' => 'admin.entrepreneurs.*'],
         ['url' => route('admin.assisted.index'), 'label' => 'Registro asistido', 'icon' => 'mic', 'active' => 'admin.assisted.*'],

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual de usuario · SONARA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --purple-900: #2E1065;
+        --purple-800: #391A86;
+        --purple-700: #4A21B0;
+        --purple-600: #5B2BD9;
+        --purple-400: #9A72EB;
+        --purple-200: #D3C2FB;
+        --purple-100: #EAE1FD;
+        --purple-50: #F4F0FF;
+        --ink: #14101F;
+        --muted: #564A78;
+        --border: #E5DFF5;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        background: #EDE9F5;
+        color: var(--ink);
+        font-family: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+        font-size: 11pt;
+        line-height: 1.55;
+    }
+
+    .page {
+        max-width: 210mm;
+        margin: 24px auto;
+        padding: 18mm 18mm 20mm;
+        background: #fff;
+        box-shadow: 0 4px 24px rgba(20, 16, 31, 0.08);
+    }
+
+    /* Encabezado repetido en pantalla; al imprimir lo pone @page */
+    .running-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 2px solid var(--purple-600);
+        padding-bottom: 6px;
+        margin-bottom: 18px;
+        font-size: 9pt;
+        color: var(--muted);
+    }
+    .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--purple-700); letter-spacing: 0.04em; }
+    .brand-mark {
+        display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px;
+        background: var(--purple-600); color: #fff; font-size: 11pt; font-weight: 800;
+    }
+
+    h1, h2, h3, h4 { color: var(--purple-900); line-height: 1.2; }
+    h1 { font-size: 26pt; margin: 0 0 4px; }
+    h2 { font-size: 18pt; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 3px solid var(--purple-100); }
+    h3 { font-size: 13pt; margin: 22px 0 8px; color: var(--purple-700); }
+    h4 { font-size: 11pt; margin: 14px 0 6px; }
+    p { margin: 0 0 10px; }
+    ul, ol { margin: 0 0 12px; padding-left: 22px; }
+    li { margin-bottom: 4px; }
+    a { color: var(--purple-600); }
+    code, .path {
+        font-family: 'Consolas', 'Courier New', monospace;
+        background: var(--purple-50);
+        color: var(--purple-800);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0 4px;
+        font-size: 9.5pt;
+    }
+
+    /* Portada */
+    .cover { text-align: center; padding: 30mm 0 10mm; }
+    .cover .brand-mark { width: 64px; height: 64px; font-size: 30pt; border-radius: 16px; }
+    .cover .brand-name { display: block; margin-top: 14px; font-size: 32pt; font-weight: 800; color: var(--purple-700); letter-spacing: 0.06em; }
+    .cover h1 { margin-top: 18px; }
+    .cover .subtitle { color: var(--muted); font-size: 12pt; }
+    .cover .meta { margin-top: 18px; font-size: 9.5pt; color: var(--muted); }
+
+    /* Avisos */
+    .callout {
+        border: 2px solid var(--purple-400);
+        background: var(--purple-50);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin: 14px 0;
+        break-inside: avoid;
+    }
+    .callout-title { font-weight: 800; color: var(--purple-800); margin-bottom: 6px; font-size: 11.5pt; }
+    .callout.strong { border-color: var(--purple-600); background: var(--purple-100); }
+    .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+
+    /* Espacio reservado para captura */
+    .shot {
+        border: 2px dashed var(--purple-400);
+        border-radius: 10px;
+        background: repeating-linear-gradient(45deg, #fff, #fff 10px, var(--purple-50) 10px, var(--purple-50) 20px);
+        min-height: 55mm;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 12px;
+        margin: 12px 0 16px;
+        color: var(--purple-700);
+        font-weight: 600;
+        font-size: 10pt;
+        break-inside: avoid;
+    }
+
+    /* Tablas */
+    table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 10pt; break-inside: avoid; }
+    th { background: var(--purple-600); color: #fff; text-align: left; padding: 6px 8px; font-weight: 700; }
+    td { border-bottom: 1px solid var(--border); padding: 6px 8px; vertical-align: top; }
+    tr:nth-child(even) td { background: #FAF9FC; }
+    td.num { width: 28px; text-align: center; font-weight: 700; color: var(--purple-700); }
+
+    /* Diálogo de voz */
+    .voice { border-left: 4px solid var(--purple-600); background: #FAF9FC; padding: 8px 12px; margin: 10px 0 14px; font-size: 10pt; break-inside: avoid; }
+    .voice p { margin: 0 0 4px; }
+    .voice .who { font-weight: 800; color: var(--purple-700); }
+
+    /* Índice */
+    .toc ol { list-style: none; padding-left: 0; }
+    .toc > ol > li { margin: 10px 0 4px; font-weight: 700; }
+    .toc ol ol { padding-left: 18px; font-weight: 400; }
+    .toc a { color: var(--ink); text-decoration: none; display: flex; gap: 6px; }
+    .toc a::after { content: ''; flex: 1; border-bottom: 1px dotted var(--purple-200); margin-bottom: 4px; order: 1; }
+    .toc a .n { color: var(--purple-600); font-weight: 700; min-width: 2.2em; }
+    .toc a:hover { color: var(--purple-600); }
+
+    .section-cover { margin-bottom: 18px; padding: 14px 18px; border-radius: 12px; background: var(--purple-600); color: #fff; }
+    .section-cover h2 { color: #fff; border: 0; margin: 0; padding: 0; }
+    .section-cover p { margin: 4px 0 0; color: var(--purple-100); }
+
+    .steps { counter-reset: s; list-style: none; padding-left: 0; }
+    .steps > li { counter-increment: s; position: relative; padding-left: 34px; margin-bottom: 8px; }
+    .steps > li::before {
+        content: counter(s); position: absolute; left: 0; top: 0;
+        width: 24px; height: 24px; border-radius: 50%; background: var(--purple-600); color: #fff;
+        display: grid; place-items: center; font-size: 9pt; font-weight: 800;
+    }
+
+    /* ------------------------------------------------------------------
+       Impresión (Chrome → Ctrl+P → Guardar como PDF)
+       ------------------------------------------------------------------ */
+    @page {
+        size: A4;
+        margin: 20mm 16mm 18mm;
+        @top-left { content: "SONARA"; font-family: 'Inter', sans-serif; font-weight: 800; font-size: 9pt; color: #4A21B0; }
+        @top-right { content: "Manual de usuario"; font-family: 'Inter', sans-serif; font-size: 8.5pt; color: #564A78; }
+        @bottom-left { content: "SONARA · Plataforma accesible de emprendimientos"; font-family: 'Inter', sans-serif; font-size: 8pt; color: #564A78; }
+        @bottom-right { content: "Página " counter(page) " de " counter(pages); font-family: 'Inter', sans-serif; font-size: 8pt; color: #564A78; }
+    }
+    @page :first {
+        @top-left { content: none; }
+        @top-right { content: none; }
+    }
+
+    @media print {
+        body { background: #fff; font-size: 10.5pt; }
+        .page { max-width: none; margin: 0; padding: 0; box-shadow: none; }
+        .running-head { display: none; }
+        .new-page { break-before: page; }
+        h2, h3, h4 { break-after: avoid; }
+        a { text-decoration: none; }
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ======================= PORTADA ======================= -->
+<div class="page">
+    <section class="cover">
+        <span class="brand-mark">S</span>
+        <span class="brand-name">SONARA</span>
+        <h1>Manual de usuario</h1>
+        <p class="subtitle">Plataforma accesible para emprendedores con discapacidad visual</p>
+        <p class="meta">Administrador · Emprendedor · Usuario normal<br>Versión 1.0 · Octubre 2026</p>
+    </section>
+
+    <div class="callout strong">
+        <div class="callout-title">⚠️ COMPATIBILIDAD</div>
+        <p>Este sistema ha sido diseñado y optimizado <strong>exclusivamente para Google Chrome (versión 110 o superior)</strong>.</p>
+        <p>No se garantiza el correcto funcionamiento en otros navegadores como Firefox, Safari, Edge o navegadores móviles alternativos.</p>
+        <p>Se recomienda mantener Chrome actualizado a su última versión.</p>
+    </div>
+
+    <p style="font-size:9.5pt;color:var(--muted)">Las direcciones que aparecen en este manual (por ejemplo <span class="path">/login</span>) se escriben después de la dirección del sistema. Ejemplo: si el sistema está en <span class="path">https://sonara.ejemplo.com</span>, la página de login es <span class="path">https://sonara.ejemplo.com/login</span>.</p>
+</div>
+
+<!-- ======================= ÍNDICE ======================= -->
+<div class="page new-page">
+    <div class="running-head"><span class="brand"><span class="brand-mark">S</span> SONARA</span><span>Manual de usuario</span></div>
+    <nav class="toc" aria-label="Índice">
+        <h2>Índice</h2>
+        <ol>
+            <li><a href="#s1"><span class="n">1.</span> Manual del Administrador</a>
+                <ol>
+                    <li><a href="#s1-1"><span class="n">1.1</span> Acceso al panel de administrador</a></li>
+                    <li><a href="#s1-2"><span class="n">1.2</span> Gestión de catálogos</a></li>
+                    <li><a href="#s1-3"><span class="n">1.3</span> Gestión de emprendedores</a></li>
+                    <li><a href="#s1-4"><span class="n">1.4</span> Gestión de emprendimientos</a></li>
+                    <li><a href="#s1-5"><span class="n">1.5</span> Estadísticas</a></li>
+                    <li><a href="#s1-6"><span class="n">1.6</span> Aviso de costos — IMPORTANTE</a></li>
+                </ol>
+            </li>
+            <li><a href="#s2"><span class="n">2.</span> Manual del Emprendedor</a>
+                <ol>
+                    <li><a href="#s2-1"><span class="n">2.1</span> Requisitos previos</a></li>
+                    <li><a href="#s2-2"><span class="n">2.2</span> Registro por voz</a></li>
+                    <li><a href="#s2-3"><span class="n">2.3</span> Login por voz</a></li>
+                    <li><a href="#s2-4"><span class="n">2.4</span> Dashboard del emprendedor</a></li>
+                    <li><a href="#s2-5"><span class="n">2.5</span> Registro de un emprendimiento por voz</a></li>
+                    <li><a href="#s2-6"><span class="n">2.6</span> Ver mis emprendimientos</a></li>
+                </ol>
+            </li>
+            <li><a href="#s3"><span class="n">3.</span> Manual del Usuario Normal</a>
+                <ol>
+                    <li><a href="#s3-1"><span class="n">3.1</span> Registro</a></li>
+                    <li><a href="#s3-2"><span class="n">3.2</span> Login</a></li>
+                    <li><a href="#s3-3"><span class="n">3.3</span> Explorar el home</a></li>
+                    <li><a href="#s3-4"><span class="n">3.4</span> Ver detalle de un emprendimiento</a></li>
+                    <li><a href="#s3-5"><span class="n">3.5</span> Perfil del emprendedor</a></li>
+                </ol>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<!-- ======================= SECCIÓN 1 ======================= -->
+<div class="page new-page">
+    <div class="running-head"><span class="brand"><span class="brand-mark">S</span> SONARA</span><span>1 · Administrador</span></div>
+    <div class="section-cover" id="s1">
+        <h2>1. Manual del Administrador</h2>
+        <p>Gestión de catálogos, emprendedores, emprendimientos, estadísticas y costos.</p>
+    </div>
+
+    <h3 id="s1-1">1.1 Acceso al panel de administrador</h3>
+    <ol class="steps">
+        <li>Abra Google Chrome e ingrese a <span class="path">/login</span>.</li>
+        <li>Escriba su <strong>correo electrónico</strong> y su <strong>contraseña</strong> de administrador.</li>
+        <li>Pulse <strong>Iniciar sesión</strong>. El sistema lo lleva directamente al panel de administración (<span class="path">/admin</span>).</li>
+    </ol>
+    <p><strong>La pantalla de login</strong> muestra los campos de correo y contraseña, la opción «Recordarme», el enlace para recuperar la contraseña y enlaces al registro de usuarios y al login por voz (este último es solo para emprendedores).</p>
+    <div class="shot">[CAPTURA: Pantalla de login con los campos de correo y contraseña]</div>
+    <p>Dentro del panel, el <strong>menú lateral</strong> (en celular: una fila de botones deslizable en la parte superior) da acceso a: Inicio, Estadísticas, Usuarios, Emprendedores, Registro asistido, Emprendimientos, Publicaciones, Categorías, Subcategorías, Catálogos, Solicitudes, Asistencia, Auditoría, Configuración y Notificaciones.</p>
+    <div class="shot">[CAPTURA: Panel de administración con el menú lateral]</div>
+    <div class="callout">
+        <div class="callout-title">✅ Acceso protegido</div>
+        <p>Si un usuario sin permisos intenta abrir una página del administrador, el sistema lo envía al login. Si un administrador abre una página exclusiva del emprendedor, vuelve a su propio panel.</p>
+    </div>
+
+    <h3 id="s1-2">1.2 Gestión de catálogos</h3>
+    <p>Los catálogos son las listas de opciones que el emprendedor escucha y elige al registrar su emprendimiento por voz, y las que se muestran en el home. Hay tres:</p>
+    <table>
+        <tr><th>Catálogo</th><th>Dónde se gestiona</th><th>Para qué sirve</th></tr>
+        <tr><td><strong>Categorías</strong></td><td>Menú <strong>Categorías</strong> (<span class="path">/admin/categorias</span>)</td><td>Rubro del emprendimiento. Aparecen como íconos en el home.</td></tr>
+        <tr><td><strong>Sectores</strong></td><td>Menú <strong>Catálogos</strong> → <strong>Sectores</strong></td><td>Zona donde está el emprendimiento. El home muestra una fila por sector.</td></tr>
+        <tr><td><strong>Etiquetas</strong></td><td>Menú <strong>Catálogos</strong> → <strong>Etiquetas</strong></td><td>Palabras clave (por ejemplo: delivery, hecho a mano).</td></tr>
+    </table>
+
+    <h4>Categorías</h4>
+    <ul>
+        <li><strong>Crear:</strong> en <em>Categorías</em> pulse <strong>Nueva categoría</strong>, complete nombre, descripción e ícono (un emoji), marque si está activa y guarde. El nombre no puede repetirse.</li>
+        <li><strong>Editar:</strong> pulse <strong>Editar</strong> en la fila de la categoría, cambie los datos y guarde. Desmarcar «activa» la oculta del home y del registro por voz sin borrarla.</li>
+        <li><strong>Eliminar:</strong> pulse <strong>Eliminar</strong> en la fila y confirme.</li>
+    </ul>
+    <div class="shot">[CAPTURA: Lista de categorías con los botones Editar y Eliminar]</div>
+
+    <h4>Sectores y etiquetas</h4>
+    <ul>
+        <li><strong>Crear:</strong> en <em>Catálogos</em> abra <strong>Sectores</strong> (o <strong>Etiquetas</strong>), escriba el nombre de la opción y pulse <strong>Agregar</strong>. Opcionalmente indique el orden en que se leerán.</li>
+        <li><strong>Editar:</strong> cambie el nombre u orden en la fila de la opción y pulse <strong>Guardar</strong>.</li>
+        <li><strong>Eliminar:</strong> pulse <strong>Eliminar</strong> en la fila de la opción.</li>
+    </ul>
+    <p>El sistema no distingue mayúsculas ni tildes: «Norte» y «norte» se consideran la misma opción, porque así las reconoce la voz. Los catálogos Sectores y Etiquetas son del sistema y no se pueden borrar completos (sí sus opciones).</p>
+    <div class="shot">[CAPTURA: Catálogo de Sectores con el formulario para agregar una opción]</div>
+
+    <div class="callout strong">
+        <div class="callout-title">⚠️ Antes de eliminar una categoría o un sector</div>
+        <ul>
+            <li><strong>Categoría eliminada:</strong> los emprendimientos que la usaban quedan <strong>sin categoría</strong> y dejan de aparecer al navegar por esa categoría.</li>
+            <li><strong>Sector eliminado:</strong> los emprendimientos conservan el nombre del sector como texto, pero esa fila <strong>desaparece del home</strong> y la opción ya no se lee en el registro por voz.</li>
+        </ul>
+        <p>Si solo quiere ocultar una categoría temporalmente, desactívela en lugar de eliminarla.</p>
+    </div>
+
+    <h3 id="s1-3">1.3 Gestión de emprendedores</h3>
+    <p>En el menú <strong>Emprendedores</strong> (<span class="path">/admin/emprendedores</span>) se ve la lista de todos los emprendedores registrados, con estas columnas:</p>
+    <table>
+        <tr><th>Columna</th><th>Qué muestra</th></tr>
+        <tr><td>Nombres / Apellidos</td><td>Tal como se registraron por voz.</td></tr>
+        <tr><td>Sobre mí / Ubicación / WhatsApp</td><td>Datos del registro por voz.</td></tr>
+        <tr><td>PIN</td><td>Solo el <strong>estado</strong> del PIN (por ejemplo «hasheado», es decir, guardado de forma cifrada). <strong>El PIN nunca se muestra.</strong></td></tr>
+        <tr><td>Datos</td><td>Avisa si al registro le falta algún dato obligatorio.</td></tr>
+        <tr><td>Verificación</td><td>Estado del proceso de verificación de identidad.</td></tr>
+        <tr><td>Estado</td><td>Activo o suspendido.</td></tr>
+    </table>
+    <div class="shot">[CAPTURA: Lista de emprendedores registrados]</div>
+
+    <h4>Cómo verificar a un emprendedor</h4>
+    <ol class="steps">
+        <li>El emprendedor sube su documento de identidad desde su panel (sección Documentación). Tiene un plazo (7 días por defecto, configurable en <em>Configuración</em>).</li>
+        <li>En <em>Emprendedores</em>, pulse <strong>Ver</strong> en su fila. Revise sus datos personales y el documento cargado.</li>
+        <li>Elija una acción:
+            <ul>
+                <li><strong>✓ Aprobar verificación</strong>: el emprendedor pasa a «Verificado».</li>
+                <li><strong>Solicitar corrección</strong>: le pide volver a subir el documento, con una nota.</li>
+                <li><strong>Rechazar</strong>: indica el motivo del rechazo.</li>
+            </ul>
+        </li>
+    </ol>
+    <p>Una vez aprobado, sus emprendimientos y su perfil público muestran el distintivo morado <strong>«Verificado»</strong>.</p>
+    <div class="shot">[CAPTURA: Ficha del emprendedor con los botones Aprobar verificación, Solicitar corrección y Rechazar]</div>
+
+    <h3 id="s1-4">1.4 Gestión de emprendimientos</h3>
+    <p>En el menú <strong>Emprendimientos</strong> (<span class="path">/admin/emprendimientos</span>) se listan todos los emprendimientos, del más reciente al más antiguo, con: nombre, emprendedor, categoría, cantidad de publicaciones y estado.</p>
+    <ul>
+        <li><strong>Ver:</strong> abre la ficha completa (datos, horario, publicaciones y si el emprendedor está verificado).</li>
+        <li><strong>Activar / desactivar:</strong> desde la ficha del emprendimiento (botón <strong>Ver</strong>). Un emprendimiento <em>inactivo</em> deja de mostrarse en el sitio público, sin borrarse.</li>
+    </ul>
+    <p>Para revisar los anuncios por estado (pendientes, publicados, suspendidos) use el menú <strong>Publicaciones</strong>, que muestra el conteo por estado.</p>
+    <div class="shot">[CAPTURA: Lista de emprendimientos en el panel de administración]</div>
+
+    <h3 id="s1-5">1.5 Estadísticas</h3>
+    <p>En el menú <strong>Estadísticas</strong> (<span class="path">/admin/estadisticas</span>). Todos los datos se calculan en el momento, directamente desde la base de datos.</p>
+    <h4>Tarjetas de indicadores (KPI)</h4>
+    <table>
+        <tr><th>Tarjeta</th><th>Qué significa</th></tr>
+        <tr><td>Emprendedores</td><td>Total de cuentas de emprendedor registradas.</td></tr>
+        <tr><td>Emprendimientos</td><td>Total de emprendimientos registrados.</td></tr>
+        <tr><td>Con imagen IA</td><td>Emprendimientos que ya tienen un flyer generado con inteligencia artificial. <strong>Útil para llevar el conteo de costos</strong> (ver 1.6).</td></tr>
+        <tr><td>Con carnet CONADIS</td><td>Emprendedores que declararon tener carnet del CONADIS.</td></tr>
+        <tr><td>Sin carnet CONADIS</td><td>Emprendedores que declararon no tenerlo.</td></tr>
+    </table>
+    <p>Los emprendedores registrados antes de que el sistema pidiera estos datos no cuentan en los contadores de CONADIS ni en el gráfico de grado de discapacidad.</p>
+    <div class="shot">[CAPTURA: Tarjetas KPI de la sección Estadísticas]</div>
+
+    <h4>Gráfico de nuevos emprendedores y filtro de fechas</h4>
+    <ol class="steps">
+        <li>Elija la fecha <strong>Desde</strong> y la fecha <strong>Hasta</strong> (por defecto, los últimos 30 días).</li>
+        <li>En <strong>Agrupar</strong> elija <em>Por día</em>, <em>Por semana</em> o <em>Por mes</em>.</li>
+        <li>Pulse <strong>Aplicar</strong>. El gráfico de barras muestra cuántos emprendedores se registraron en cada período, y encima se indica el total del rango.</li>
+    </ol>
+    <p>El filtro de fechas solo afecta a este gráfico; las tarjetas siempre muestran el total histórico.</p>
+    <div class="shot">[CAPTURA: Gráfico de nuevos emprendedores con el filtro de fechas]</div>
+
+    <h4>Gráfico de grado de discapacidad</h4>
+    <p>Gráfico circular con la cantidad de emprendedores en grado <strong>Leve</strong>, <strong>Moderada</strong> y <strong>Severa</strong>. Debajo se muestran los mismos números en texto.</p>
+    <div class="shot">[CAPTURA: Gráfico de grado de discapacidad]</div>
+
+    <h3 id="s1-6">1.6 Aviso de costos — IMPORTANTE</h3>
+    <div class="callout strong">
+        <div class="callout-title">💰 COSTO POR GENERACIÓN DE IMAGEN CON IA</div>
+        <p>Cada vez que un emprendedor registra un emprendimiento, el sistema genera automáticamente un flyer publicitario usando la API de <strong>Google Gemini Image</strong>.</p>
+        <p>Este servicio tiene un <strong>costo adicional por imagen generada</strong>, facturado directamente por Google a la cuenta vinculada a la API Key configurada en el sistema.</p>
+        <p><strong>Se recomienda al administrador:</strong></p>
+        <ul>
+            <li>Monitorear el uso mensual desde Google Cloud Console.</li>
+            <li>Establecer un límite de presupuesto en la consola de Google.</li>
+            <li>Revisar la tarjeta <strong>«Con imagen IA»</strong> del panel de Estadísticas para llevar el conteo.</li>
+            <li>URL de monitoreo: <a href="https://console.cloud.google.com/billing">https://console.cloud.google.com/billing</a></li>
+        </ul>
+        <p>Si la generación falla (por ejemplo, por falta de saldo), el emprendimiento se publica igual y la imagen queda pendiente; cada reintento de generación también tiene costo.</p>
+        <p><strong>El administrador es responsable de gestionar y controlar este gasto dentro de su cuenta de Google Cloud.</strong></p>
+    </div>
+</div>
+
+<!-- ======================= SECCIÓN 2 ======================= -->
+<div class="page new-page">
+    <div class="running-head"><span class="brand"><span class="brand-mark">S</span> SONARA</span><span>2 · Emprendedor</span></div>
+    <div class="section-cover" id="s2">
+        <h2>2. Manual del Emprendedor</h2>
+        <p>Para emprendedores con discapacidad visual. Todo el proceso se hace con la voz.</p>
+    </div>
+
+    <p>Este capítulo puede leerlo la persona emprendedora con su lector de pantalla o un familiar que la acompañe la primera vez. Después de configurar el micrófono, el sistema guía todo con audio.</p>
+
+    <h3 id="s2-1">2.1 Requisitos previos</h3>
+    <ul>
+        <li>Usar <strong>Google Chrome</strong> (versión 110 o superior).</li>
+        <li>Tener un micrófono funcionando (el del celular, la laptop o unos audífonos con micrófono) y los parlantes con volumen.</li>
+        <li>Permitir el micrófono en Chrome.</li>
+    </ul>
+    <h4>🎙️ Cómo activar el micrófono en Chrome</h4>
+    <ol class="steps">
+        <li>Abra el menú de Chrome (los tres puntos ⋮ arriba a la derecha) y entre a <strong>Configuración</strong>.</li>
+        <li>Vaya a <strong>Privacidad y seguridad</strong> → <strong>Configuración de sitios</strong> → <strong>Micrófono</strong>.</li>
+        <li>Elija <strong>Los sitios pueden pedir permiso para usar tu micrófono</strong> y verifique que SONARA no esté en la lista de bloqueados.</li>
+        <li>La primera vez que use el registro o el login por voz, Chrome preguntará si permite el micrófono: elija <strong>Permitir</strong>.</li>
+    </ol>
+    <div class="shot">[CAPTURA: Configuración de Chrome → Micrófono → Permitir]</div>
+
+    <div class="callout">
+        <div class="callout-title">🎙️ Cómo funciona la conversación</div>
+        <ul>
+            <li>El asistente hace <strong>una pregunta a la vez</strong> en voz alta.</li>
+            <li>Después de cada pregunta suena un <strong>pitido corto</strong>: significa que el micrófono está abierto y ya puede hablar.</li>
+            <li>Hable con normalidad. El sistema no distingue mayúsculas ni tildes.</li>
+            <li>Si su respuesta no es válida, el asistente le explica por qué y repite la pregunta.</li>
+        </ul>
+        <p><strong>Palabras que puede decir en cualquier momento:</strong> «<strong>repetir</strong>» (repite la pregunta), «<strong>atrás</strong>» (vuelve a la pregunta anterior), «<strong>ayuda</strong>» (explica las opciones) y «<strong>cancelar</strong>» (detiene el proceso).</p>
+    </div>
+
+    <h3 id="s2-2">2.2 Registro por voz</h3>
+    <ol class="steps">
+        <li>Ingrese a <span class="path">/registro/voz</span>. También puede llegar desde el home con el botón «Soy emprendedor: registro por voz».</li>
+        <li>Presione cualquier tecla (o pulse <strong>Comenzar</strong>) para activar el asistente.</li>
+        <li>Responda las preguntas. El asistente guía todo por audio.</li>
+    </ol>
+    <div class="shot">[CAPTURA: Pantalla de registro por voz con el botón Comenzar]</div>
+    <p>Preguntas, en el orden en que se hacen:</p>
+    <table>
+        <tr><th>#</th><th>Pregunta</th><th>Qué responder</th></tr>
+        <tr><td class="num">1</td><td>¿Cuáles son sus nombres?</td><td>Sus nombres, solo letras.</td></tr>
+        <tr><td class="num">2</td><td>¿Cuáles son sus apellidos?</td><td>Sus apellidos, solo letras.</td></tr>
+        <tr><td class="num">3</td><td>¿Cuál es su número de documento de identidad?</td><td>Su DNI, número por número (8 a 12 dígitos).</td></tr>
+        <tr><td class="num">4</td><td>¿Cuál es su grado de discapacidad?</td><td>Una de tres opciones: <strong>LEVE</strong>, <strong>MODERADA</strong> o <strong>SEVERA</strong>. Si dice otra cosa, se repite la pregunta.</td></tr>
+        <tr><td class="num">5</td><td>¿Cuenta usted con carnet del CONADIS?</td><td><strong>SÍ</strong> o <strong>NO</strong> (también se entiende «claro», «negativo», «no tengo»).</td></tr>
+        <tr><td class="num">6</td><td>Indique su número de identificación del CONADIS</td><td><em>Solo si respondió SÍ.</em> El número, dígito por dígito.</td></tr>
+        <tr><td class="num">7</td><td>Cuénteme brevemente sobre usted.</td><td>Una breve presentación (biografía).</td></tr>
+        <tr><td class="num">8</td><td>¿En qué ciudad o sector se encuentra?</td><td>Su ubicación.</td></tr>
+        <tr><td class="num">9</td><td>¿Cuál es su número de WhatsApp?</td><td>El número, dígito por dígito.</td></tr>
+        <tr><td class="num">10</td><td>Cree un PIN de cuatro dígitos.</td><td>Cuatro números, uno por uno. <strong>Será su contraseña.</strong></td></tr>
+    </table>
+
+    <h4>Al finalizar</h4>
+    <p>El asistente anuncia que la cuenta fue creada y le dice en voz alta:</p>
+    <ul>
+        <li><strong>Su usuario:</strong> sus nombres y apellidos completos, tal como los dijo.</li>
+        <li><strong>Su PIN</strong>, dígito por dígito. <strong>Es la única vez que se dice</strong>: memorícelo o anótelo en un lugar seguro. En la pantalla aparece oculto (* * * *).</li>
+    </ul>
+    <p>Luego el sistema lo lleva a la pantalla de login por voz.</p>
+    <div class="voice">
+        <p><span class="who">SONARA:</span> Perfecto, se creó la cuenta. Su usuario es: rosa maria mamani quispe. Su PIN es: 7 2 0 5. Ahora le mandaremos a la pantalla de login…</p>
+    </div>
+    <div class="callout">
+        <div class="callout-title">⚠️ Si ya existe una cuenta con su nombre</div>
+        <p>El asistente le avisará y le pedirá decir sus nombres completos, incluyendo su segundo nombre. Si la cuenta es suya, vaya al login por voz.</p>
+    </div>
+
+    <h3 id="s2-3">2.3 Login por voz</h3>
+    <ol class="steps">
+        <li>Ingrese a <span class="path">/login/voz</span> y active el asistente con cualquier tecla.</li>
+        <li>Cuando pregunte <strong>«¿Cuál es su usuario?»</strong>, diga su <strong>nombre completo</strong> (nombres y apellidos tal como se registró).</li>
+        <li>Cuando pregunte <strong>«¿Cuál es su PIN?»</strong>, diga sus cuatro dígitos.</li>
+    </ol>
+    <p>Si los datos son correctos, el asistente le da la bienvenida («Perfecto, bienvenido…») y lo lleva a su dashboard. Si no, dice «El usuario o el PIN no son correctos» y vuelve a empezar.</p>
+    <div class="callout">
+        <div class="callout-title">🔒 Seguridad</div>
+        <p>Después de <strong>5 intentos fallidos</strong>, el acceso se bloquea por unos minutos. El asistente le indica cuánto debe esperar.</p>
+    </div>
+    <div class="shot">[CAPTURA: Pantalla de login por voz]</div>
+
+    <h3 id="s2-4">2.4 Dashboard del emprendedor</h3>
+    <p>Al entrar, el asistente anuncia:</p>
+    <div class="voice">
+        <p><span class="who">SONARA:</span> Te encuentras en el dashboard de emprendedor. ¿Qué deseas hacer ahora? Registrar un nuevo emprendimiento, ver mis emprendimientos, o ver mis solicitudes.</p>
+    </div>
+    <table>
+        <tr><th>Diga…</th><th>Lo que pasa</th></tr>
+        <tr><td>«Registrar un nuevo emprendimiento» (o «uno», «nuevo»)</td><td>Empieza el registro de un emprendimiento por voz (2.5).</td></tr>
+        <tr><td>«Ver mis emprendimientos» (o «dos»)</td><td>Abre la lista de sus emprendimientos (2.6).</td></tr>
+        <tr><td>«Ver mis solicitudes» (o «tres»)</td><td>Abre los pedidos que le enviaron los clientes.</td></tr>
+        <tr><td>«Repetir» o «ayuda»</td><td>El asistente vuelve a leer las opciones.</td></tr>
+    </table>
+    <div class="shot">[CAPTURA: Dashboard del emprendedor con el botón Activar voz]</div>
+
+    <h3 id="s2-5">2.5 Registro de un emprendimiento por voz</h3>
+    <p>Preguntas, en orden:</p>
+    <table>
+        <tr><th>#</th><th>Pregunta</th><th>Qué responder</th></tr>
+        <tr><td class="num">1</td><td>Nombre del emprendimiento</td><td>Cómo se llama su negocio.</td></tr>
+        <tr><td class="num">2</td><td>Descripción</td><td>Qué ofrece, en una o dos frases.</td></tr>
+        <tr><td class="num">3</td><td>¿Ofreces un producto o un servicio?</td><td>«Producto» o «servicio».</td></tr>
+        <tr><td class="num">4</td><td>Categoría</td><td>El asistente lee las categorías disponibles; diga una.</td></tr>
+        <tr><td class="num">5</td><td>Sector</td><td>El asistente lee los sectores disponibles; diga uno.</td></tr>
+        <tr><td class="num">6</td><td>Etiquetas</td><td>Palabras clave separadas por una pausa, o «ninguna» para continuar.</td></tr>
+        <tr><td class="num">7</td><td>Teléfono de contacto</td><td>El número, dígito por dígito.</td></tr>
+        <tr><td class="num">8</td><td>Ubicación del emprendimiento</td><td>Dirección o referencia.</td></tr>
+        <tr><td class="num">9</td><td>Precio o rango de precios</td><td>Por ejemplo: «desde diez soles» o «precio a consultar».</td></tr>
+        <tr><td class="num">10</td><td>Horario de atención</td><td>Por ejemplo: «lunes a viernes de ocho a cinco».</td></tr>
+    </table>
+    <p>Si el administrador todavía no creó opciones de categoría o sector, el asistente le pedirá dictar el valor que quiera usar.</p>
+    <h4>Al finalizar</h4>
+    <p>El asistente dice «Listo, guardé los datos. Ahora estoy creando la imagen con inteligencia artificial…» y luego anuncia el resultado:</p>
+    <ul>
+        <li><strong>Todo listo:</strong> «Tu emprendimiento y su imagen han sido publicados exitosamente.»</li>
+        <li><strong>Imagen en proceso:</strong> «Tu emprendimiento ha sido registrado. Se está generando tu imagen de anuncio…». El emprendimiento ya está publicado; el flyer aparecerá más tarde.</li>
+    </ul>
+    <p>El flyer es una imagen vertical, lista para compartir por WhatsApp o redes sociales, con el nombre, precio, horario y WhatsApp de su emprendimiento.</p>
+    <div class="shot">[CAPTURA: Pantalla de registro de emprendimiento por voz]</div>
+    <div class="shot">[CAPTURA: Ejemplo de flyer generado con IA]</div>
+
+    <h3 id="s2-6">2.6 Ver mis emprendimientos</h3>
+    <p>En su panel, <strong>Emprendimientos</strong> (o diga «ver mis emprendimientos» en el dashboard). Se muestra la lista con:</p>
+    <ul>
+        <li><strong>Nombre</strong>, <strong>categoría</strong> y <strong>tipo</strong> (producto o servicio).</li>
+        <li><strong>Publicaciones:</strong> cuántos anuncios tiene.</li>
+        <li><strong>Estado:</strong> <em>Activo</em> (visible en el sitio) o <em>Inactivo</em> (oculto).</li>
+        <li>Botones <strong>Ver</strong> (abre su página pública) y <strong>Editar</strong>.</li>
+    </ul>
+    <div class="shot">[CAPTURA: Lista «Mis emprendimientos» del emprendedor]</div>
+</div>
+
+<!-- ======================= SECCIÓN 3 ======================= -->
+<div class="page new-page">
+    <div class="running-head"><span class="brand"><span class="brand-mark">S</span> SONARA</span><span>3 · Usuario normal</span></div>
+    <div class="section-cover" id="s3">
+        <h2>3. Manual del Usuario Normal</h2>
+        <p>Para clientes que buscan productos y servicios.</p>
+    </div>
+
+    <h3 id="s3-1">3.1 Registro</h3>
+    <ol class="steps">
+        <li>Ingrese a <span class="path">/register</span> (botón <strong>Registrarse</strong> en la parte superior).</li>
+        <li>Complete el formulario: <strong>nombres</strong>, <strong>apellidos</strong>, <strong>correo electrónico</strong>, <strong>teléfono</strong>, <strong>contraseña</strong> y <strong>confirmar contraseña</strong>.</li>
+        <li>Pulse <strong>Crear cuenta</strong>. Su sesión se inicia y vuelve al home.</li>
+    </ol>
+    <div class="callout">
+        <div class="callout-title">ℹ️ ¿Es emprendedor?</div>
+        <p>Este formulario es solo para usuarios normales. <strong>El registro de emprendedores es exclusivamente por voz</strong>, en <span class="path">/registro/voz</span>.</p>
+    </div>
+    <div class="shot">[CAPTURA: Formulario de registro de usuario]</div>
+
+    <h3 id="s3-2">3.2 Login</h3>
+    <p>Ingrese a <span class="path">/login</span> (botón <strong>Ingresar</strong>), escriba su correo y contraseña y pulse <strong>Iniciar sesión</strong>. Si olvidó la contraseña, use el enlace «¿Olvidaste tu contraseña?».</p>
+
+    <h3 id="s3-3">3.3 Explorar el home</h3>
+    <p>El home está organizado de arriba hacia abajo:</p>
+    <ol class="steps">
+        <li><strong>Barra de búsqueda:</strong> escriba lo que busca (un producto, un servicio o el nombre de un emprendedor) y pulse <strong>Buscar</strong>.</li>
+        <li><strong>Categorías:</strong> íconos con el nombre de cada rubro. En celular, deslice hacia los lados para ver más. Toque una para ver sus emprendimientos.</li>
+        <li><strong>Destacados recientes:</strong> los emprendimientos más nuevos, primero los que tienen flyer.</li>
+        <li><strong>Por sector:</strong> una fila por cada zona (por ejemplo «Sector Centro»). Deslice o use las flechas para recorrerla.</li>
+        <li><strong>Presentación de SONARA</strong>, con accesos al registro.</li>
+    </ol>
+    <p>Cada tarjeta muestra el flyer, la categoría, el nombre, el precio y el botón <strong>Ver más</strong>.</p>
+    <div class="shot">[CAPTURA: Home con la barra de búsqueda y las categorías]</div>
+    <div class="shot">[CAPTURA: Home con emprendimientos destacados y una fila por sector]</div>
+
+    <h3 id="s3-4">3.4 Ver detalle de un emprendimiento</h3>
+    <p>Al pulsar <strong>Ver más</strong> se abre la ficha completa:</p>
+    <ul>
+        <li><strong>Flyer</strong> generado con IA, completo y sin recortes.</li>
+        <li><strong>Nombre, descripción, precio, horario y ubicación.</strong></li>
+        <li><strong>Escuchar descripción:</strong> el sistema lee la descripción en voz alta.</li>
+        <li><strong>Contacto:</strong> botones para <strong>llamar</strong> y escribir por <strong>WhatsApp</strong>.</li>
+        <li><strong>Enviar solicitud:</strong> con su cuenta puede enviar un pedido al emprendedor (cantidad, fecha y hora preferidas, mensaje).</li>
+    </ul>
+    <h4>Botón «Compartir»</h4>
+    <p>Comparte el emprendimiento con <strong>el flyer, los detalles</strong> (nombre, descripción, precio, horario, contacto) <strong>y el enlace</strong> a su página.</p>
+    <ul>
+        <li>En celular se abre el menú de compartir del teléfono (WhatsApp, Facebook, etc.).</li>
+        <li>Si el navegador no puede compartir directamente, el texto y los enlaces <strong>se copian al portapapeles</strong> y aparece el mensaje «Copiado al portapapeles». Solo tiene que pegarlo donde quiera.</li>
+    </ul>
+    <h4>Botón «Ver perfil»</h4>
+    <p>En la tarjeta del emprendedor (con sus iniciales y su nombre) pulse <strong>Ver perfil</strong> para abrir su perfil público (3.5).</p>
+    <div class="shot">[CAPTURA: Detalle de un emprendimiento con los botones WhatsApp y Compartir]</div>
+    <div class="shot">[CAPTURA: Tarjeta del emprendedor con el botón Ver perfil]</div>
+
+    <h3 id="s3-5">3.5 Perfil del emprendedor</h3>
+    <p>Dirección: <span class="path">/emprendedor/{número}/perfil</span>. Muestra:</p>
+    <ul>
+        <li><strong>Nombre completo</strong> y su distintivo de verificación.</li>
+        <li><strong>Ubicación</strong> y <strong>Sobre mí</strong>.</li>
+        <li><strong>Qué ofrece:</strong> resumen de productos y servicios (categorías y palabras clave de sus emprendimientos).</li>
+        <li><strong>Emprendimientos publicados:</strong> todos sus emprendimientos activos, con flyer, descripción y precio.</li>
+    </ul>
+    <div class="callout">
+        <div class="callout-title">✅ ¿Qué significa «Verificado»?</div>
+        <p>El distintivo morado <strong>Verificado</strong> indica que el equipo de SONARA revisó el documento de identidad del emprendedor y aprobó su cuenta. Si dice <strong>No verificado</strong>, la cuenta todavía no completó esa revisión; no significa que sea fraudulenta.</p>
+    </div>
+    <div class="shot">[CAPTURA: Perfil público del emprendedor con el distintivo Verificado]</div>
+</div>
+
+</body>
+</html>

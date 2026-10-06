@@ -1,252 +1,118 @@
-@extends('layouts.app')
+@extends('layouts.app', ['bodyClasses' => '!bg-white'])
 
 @section('title', 'Inicio')
 
-@section('hero')
-<section class="relative overflow-hidden" style="background-color: var(--color-cream)">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            <div class="lg:col-span-7 u-fade-up">
-                <p class="mono-label inline-flex items-center gap-2 rounded-full border-[1.5px] px-4 py-2" style="border-color: var(--color-border-2); background: #fff" aria-label="Distintivo">
-                    <x-icon name="sparkles" class="w-4 h-4 text-purple-600" /> Plataforma accesible · Voz guiada
-                </p>
-
-                <h1 class="mt-6 font-display font-extrabold text-[2.75rem] leading-[0.95] sm:text-6xl sm:leading-[0.94] lg:text-7xl lg:leading-[0.92] tracking-[-0.03em] text-ink">
-                    Emprendimientos<br>
-                    que se escuchan<br>
-                    <span class="text-purple-600">y se apoyan.</span>
-                </h1>
-
-                <p class="mt-6 text-lg text-gray-600 max-w-xl leading-relaxed">
-                    SONARA conecta a emprendedores con discapacidad visual con clientes que valoran su talento.
-                    Explora, solicita y crece en una plataforma diseñada con accesibilidad desde el inicio.
-                </p>
-
-                <form action="{{ route('public.explore') }}" method="GET" class="mt-8 max-w-xl" role="search">
-                    <label for="hero-search" class="sr-only">Buscar productos o servicios</label>
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <div class="input-group flex-1 bg-white rounded-full">
-                            <span class="input-icon !text-purple-500"><x-icon name="search" /></span>
-                            <input type="search" name="q" id="hero-search" placeholder="Busca productos, servicios o emprendedores…"
-                                   class="input-text !rounded-full !bg-white">
-                        </div>
-                        <button type="submit" class="btn btn-primary !rounded-full">
-                            Buscar
-                        </button>
-                    </div>
-                </form>
-
-                <div class="mt-6 flex flex-wrap gap-3">
-                    <a href="{{ route('voice-registration.index') }}" class="btn btn-secondary">
-                        <x-icon name="mic" class="w-5 h-5" /> Registro guiado por voz
-                    </a>
-                    <a href="{{ route('register') }}" class="inline-flex items-center gap-2 rounded-xl px-4 py-3 font-bold text-purple-700 hover:text-purple-900">
-                        Crear cuenta de emprendedor
-                        <x-icon name="arrow-right" class="w-4 h-4" />
-                    </a>
-                </div>
-
-                <dl class="mt-12 grid grid-cols-3 gap-6 max-w-lg border-t-[1.5px] pt-6" style="border-color: var(--color-border-2)">
-                    <div>
-                        <dt class="mono-label">Emprendimientos</dt>
-                        <dd class="mt-1 text-3xl sm:text-4xl font-display font-extrabold text-ink">{{ $totalBusinesses }}</dd>
-                    </div>
-                    <div>
-                        <dt class="mono-label">Categorías</dt>
-                        <dd class="mt-1 text-3xl sm:text-4xl font-display font-extrabold text-ink">{{ $totalCategories }}</dd>
-                    </div>
-                    <div>
-                        <dt class="mono-label">Publicaciones</dt>
-                        <dd class="mt-1 text-3xl sm:text-4xl font-display font-extrabold text-ink">{{ $totalPublications }}</dd>
-                    </div>
-                </dl>
-            </div>
-
-            <div class="lg:col-span-5 relative u-fade-up u-delay-2" aria-hidden="true">
-                <div class="relative rounded-[2rem] overflow-hidden p-8 sm:p-10" style="background-color: var(--color-primary-deep)">
-                    <div class="absolute -top-10 -right-10 w-56 h-56 rounded-full opacity-40 blur-3xl" style="background: var(--color-primary)"></div>
-                    <div class="relative grid grid-cols-2 gap-4">
-                        <div class="rounded-2xl bg-white/10 border border-white/15 p-5">
-                            <span class="grid place-items-center w-10 h-10 rounded-xl mb-3" style="background: var(--color-accent); color: var(--color-ink)"><x-icon name="mic" class="w-5 h-5" /></span>
-                            <p class="text-sm text-purple-100">Registro y navegación guiados por comandos de voz.</p>
-                        </div>
-                        <div class="rounded-2xl bg-white/10 border border-white/15 p-5 mt-8">
-                            <span class="grid place-items-center w-10 h-10 rounded-xl mb-3 bg-white/15"><x-icon name="sparkles" class="w-5 h-5 text-white" /></span>
-                            <p class="text-sm text-purple-100">Flyers generados con IA para cada publicación.</p>
-                        </div>
-                    </div>
-                    <div class="relative mt-4 rounded-2xl bg-white/10 border border-white/15 p-5 text-sm text-purple-100 leading-relaxed">
-                        Navega con comandos de voz, botones grandes y alto contraste.
-                        La accesibilidad no es un extra: es el corazón de SONARA.
-                    </div>
-                </div>
-
-                {{-- Tarjetas flotantes --}}
-                <div class="absolute -left-5 top-8 hidden sm:flex items-center gap-2 rounded-2xl bg-white shadow-lift border-[1.5px] border-gray-100 px-4 py-3">
-                    <span class="grid place-items-center w-8 h-8 rounded-full bg-green-50 text-green-700"><x-icon name="verified" class="w-4 h-4" /></span>
-                    <p class="text-sm font-bold text-ink">Verificado</p>
-                </div>
-                <div class="absolute -right-4 bottom-10 hidden sm:flex items-center gap-2 rounded-2xl bg-white shadow-lift border-[1.5px] border-gray-100 px-4 py-3">
-                    <span class="relative grid place-items-center w-8 h-8 rounded-full" style="background: var(--color-accent)">
-                        <x-icon name="mic" class="w-4 h-4 text-ink" />
-                    </span>
-                    <p class="text-sm font-bold text-ink">Escuchando…</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- Marquesina de categorías --}}
-<div class="overflow-hidden border-y-[1.5px]" style="background-color: var(--color-ink); border-color: rgba(255,255,255,0.08)" aria-hidden="true">
-    <div class="marquee-track py-4">
-        @for ($i = 0; $i < 2; $i++)
-            @foreach ($categories as $category)
-                <span class="mx-5 inline-flex items-center gap-5 text-white/70 font-display font-bold text-lg tracking-tight whitespace-nowrap">
-                    {{ strtoupper($category->name) }}
-                    <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--color-accent)"></span>
-                </span>
-            @endforeach
-        @endfor
-    </div>
-</div>
-@endsection
-
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 space-y-20">
-    {{-- Categorías --}}
-    <section aria-labelledby="home-categorias">
-        <div class="section-head">
-            <div>
-                <p class="mono-label mb-2">02 / Categorías</p>
-                <h2 id="home-categorias" class="section-title">Explora por categoría</h2>
-            </div>
-            <a href="{{ route('public.categories') }}" class="link-all shrink-0">Ver todas <x-icon name="arrow-right" class="w-4 h-4" /></a>
-        </div>
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <h1 class="sr-only">SONARA: emprendimientos de personas con discapacidad visual</h1>
 
-        <div class="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 md:overflow-visible">
-            @forelse ($categories as $category)
-                <a href="{{ route('public.explore').'?category='.$category->id }}"
-                   class="card card-body !p-5 text-center shrink-0 w-36 sm:w-auto card-hover u-fade-up">
-                    <span class="grid place-items-center w-14 h-14 mx-auto rounded-2xl text-2xl" style="background: var(--color-lavender)" aria-hidden="true">{{ $category->icon }}</span>
-                    <p class="mt-3 font-display font-bold text-base">{{ $category->name }}</p>
-                    <p class="mono-label mt-1">{{ $category->visible_publications_count }} {{ $category->visible_publications_count === 1 ? 'publicación' : 'publicaciones' }}</p>
-                </a>
-            @empty
-                <p class="text-gray-600">Próximamente más categorías.</p>
-            @endforelse
-        </div>
+    {{-- 1. Búsqueda --}}
+    <section aria-label="Buscar" class="pt-6 sm:pt-10">
+        <form action="{{ route('public.explore') }}" method="GET" role="search" class="mx-auto max-w-3xl">
+            <label for="home-search" class="sr-only">Buscar productos, servicios o emprendedores</label>
+            <div class="flex items-stretch overflow-hidden rounded-full border-2 border-purple-600 bg-white shadow-sm focus-within:ring-4 focus-within:ring-purple-200">
+                <span class="hidden items-center pl-5 text-gray-600 sm:flex" aria-hidden="true"><x-icon name="search" class="h-5 w-5" /></span>
+                <input type="search" id="home-search" name="q" value="{{ request('q') }}"
+                       placeholder="Busca productos, servicios o emprendedores…"
+                       class="min-w-0 flex-1 border-0 bg-transparent px-4 py-3.5 text-base focus:ring-0 sm:px-3 sm:text-lg">
+                <button type="submit" class="m-1 inline-flex items-center gap-2 rounded-full bg-purple-600 px-5 font-bold text-white hover:bg-purple-700 sm:px-7">
+                    <x-icon name="search" class="h-5 w-5 sm:hidden" />
+                    <span class="sr-only sm:not-sr-only">Buscar</span>
+                </button>
+            </div>
+        </form>
     </section>
 
-    {{-- Cómo funciona --}}
-    <section aria-labelledby="home-como" class="rounded-[2rem] p-8 sm:p-12" style="background-color: var(--color-lavender)">
-        <p class="mono-label text-center mb-2">03 / Cómo funciona</p>
-        <h2 id="home-como" class="section-title text-center">Así de fácil funciona SONARA</h2>
-        <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div class="text-center">
-                <span class="inline-grid place-items-center w-16 h-16 rounded-2xl bg-white shadow-soft text-purple-700 font-display font-extrabold text-xl" aria-hidden="true">01</span>
-                <h3 class="mt-4 font-display font-bold text-lg">Crea tu cuenta</h3>
-                <p class="mt-1.5 text-sm text-gray-600 text-balance">Escríbenos o usa el registro guiado por voz, sin necesidad de escribir.</p>
+    {{-- 2. Categorías (las del admin) --}}
+    @if ($categories->isNotEmpty())
+        <section aria-labelledby="home-categorias" class="pt-8">
+            <div class="mb-3 flex items-end justify-between gap-4">
+                <h2 id="home-categorias" class="text-xl font-extrabold sm:text-2xl">Categorías</h2>
+                <a href="{{ route('public.categories') }}" class="shrink-0 text-sm font-bold text-purple-700 hover:underline">Ver todas</a>
             </div>
-            <div class="text-center">
-                <span class="inline-grid place-items-center w-16 h-16 rounded-2xl bg-white shadow-soft text-purple-700 font-display font-extrabold text-xl" aria-hidden="true">02</span>
-                <h3 class="mt-4 font-display font-bold text-lg">Publica o explora</h3>
-                <p class="mt-1.5 text-sm text-gray-600 text-balance">Si emprendes, publica con IA generando flyers; si buscas, explora por categorías.</p>
-            </div>
-            <div class="text-center">
-                <span class="inline-grid place-items-center w-16 h-16 rounded-2xl bg-white shadow-soft text-purple-700 font-display font-extrabold text-xl" aria-hidden="true">03</span>
-                <h3 class="mt-4 font-display font-bold text-lg">Conecta y solicita</h3>
-                <p class="mt-1.5 text-sm text-gray-600 text-balance">Contacta por WhatsApp o teléfono y haz tu solicitud en segundos.</p>
-            </div>
-        </div>
-    </section>
-
-    {{-- Destacados --}}
-    <section aria-labelledby="home-destacados">
-        <div class="section-head">
-            <div>
-                <p class="mono-label mb-2">04 / Destacados</p>
-                <h2 id="home-destacados" class="section-title">Emprendimientos destacados</h2>
-            </div>
-            <a href="{{ route('public.explore') }}" class="link-all shrink-0">Ver todos <x-icon name="arrow-right" class="w-4 h-4" /></a>
-        </div>
-
-        <div class="flex flex-wrap gap-2 mb-6" role="group" aria-label="Filtrar destacados por tipo">
-            <a href="{{ route('public.explore') }}" class="chip chip-active">Todos</a>
-            <a href="{{ route('public.explore', ['type' => 'producto']) }}" class="chip">Productos</a>
-            <a href="{{ route('public.explore', ['type' => 'servicio']) }}" class="chip">Servicios</a>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            @forelse ($featured as $publication)
-                <x-publication-card :publication="$publication" />
-            @empty
-                <div class="empty-state col-span-full">
-                    <span class="empty-icon"><x-icon name="box" /></span>
-                    <p class="mt-3 font-semibold text-gray-800">Aún no hay publicaciones destacadas</p>
-                    <p class="text-sm text-gray-600 mt-1">Vuelve pronto, estamos llenando el escaparate.</p>
-                </div>
-            @endforelse
-        </div>
-    </section>
-
-    {{-- Verificados --}}
-    @if ($verified->count())
-    <section aria-labelledby="home-verificados" class="rounded-[2rem] border-[1.5px] p-6 sm:p-10" style="border-color: var(--color-success-border); background-color: var(--color-success-soft)">
-        <div class="section-head">
-            <div>
-                <p class="mono-label mb-2" style="color: var(--color-success)">05 / Confianza verificada</p>
-                <h2 id="home-verificados" class="section-title flex items-center gap-3">
-                    <span class="grid place-items-center w-10 h-10 rounded-xl bg-green-600 text-white" aria-hidden="true">
-                        <x-icon name="verified" class="w-5 h-5" />
-                    </span>
-                    Emprendedores verificados
-                </h2>
-            </div>
-            <a href="{{ route('public.explore').'?verificado=1' }}" class="link-all shrink-0" style="color: var(--color-success)">Ver todos <x-icon name="arrow-right" class="w-4 h-4" /></a>
-        </div>
-        <p class="-mt-3 mb-6 text-sm text-gray-600">Emprendimientos que han acreditado identidad y calidad.</p>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach ($verified as $publication)
-                <x-publication-card :publication="$publication" />
-            @endforeach
-        </div>
-    </section>
+            <ul class="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0 [scrollbar-width:thin]">
+                @foreach ($categories as $category)
+                    <li class="shrink-0 snap-start">
+                        <a href="{{ route('public.category', $category) }}"
+                           class="flex w-24 flex-col items-center gap-2 rounded-2xl p-2 text-center hover:bg-purple-100 sm:w-28">
+                            <span class="grid h-16 w-16 place-items-center rounded-full bg-purple-100 text-3xl ring-1 ring-purple-400 sm:h-20 sm:w-20" aria-hidden="true">{{ $category->icon ?: '🛍️' }}</span>
+                            <span class="line-clamp-2 text-xs font-semibold leading-tight text-purple-700 sm:text-sm">{{ $category->name }}</span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
     @endif
 
-    {{-- Llamada a la acción --}}
-    <section aria-labelledby="home-cta" class="relative overflow-hidden rounded-[2rem] text-white" style="background-color: var(--color-primary-deep)">
-        <div class="absolute -top-16 -right-16 w-72 h-72 rounded-full opacity-30 blur-3xl" style="background: var(--color-primary)" aria-hidden="true"></div>
-        <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-10 p-8 sm:p-12">
-            <div>
-                <p class="mono-label !text-purple-200 mb-3">06 / Empieza hoy</p>
-                <h2 id="home-cta" class="text-3xl sm:text-4xl font-display font-extrabold leading-[0.98] text-balance">¿Eres emprendedor con discapacidad visual?</h2>
-                <p class="mt-4 text-purple-100 max-w-md leading-relaxed">
-                    Regístrate con nuestro asistente por voz, crea tu emprendimiento y genera flyers con IA para llegar a más clientes.
-                </p>
-                <div class="mt-7 flex flex-wrap gap-3">
-                    <a href="{{ route('voice-registration.index') }}" class="btn btn-dark">
-                        <x-icon name="mic" class="w-5 h-5" /> Registro guiado por voz
-                    </a>
-                    <a href="{{ route('register') }}" class="btn btn-secondary !bg-transparent !text-white !border-white/40 hover:!bg-white/10">
-                        Registro tradicional
-                    </a>
+    {{-- 3. Destacados --}}
+    <section aria-labelledby="home-destacados" class="pt-10">
+        <div class="mb-4 flex items-end justify-between gap-4">
+            <h2 id="home-destacados" class="text-xl font-extrabold sm:text-2xl">
+                <span class="mr-1 rounded-md bg-purple-600 px-2 py-0.5 text-white">Destacados</span> recientes
+            </h2>
+            <a href="{{ route('public.explore') }}" class="shrink-0 text-sm font-bold text-purple-700 hover:underline">Ver todos</a>
+        </div>
+
+        @if ($featured->isEmpty())
+            <div class="rounded-2xl border border-dashed border-gray-300 p-10 text-center text-gray-600">
+                Aún no hay emprendimientos publicados. ¡Vuelve pronto!
+            </div>
+        @else
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                @foreach ($featured as $publication)
+                    <x-product-card :publication="$publication" />
+                @endforeach
+            </div>
+        @endif
+    </section>
+
+    {{-- 4. Por sector (los del admin; sin anuncios no se muestran) --}}
+    @foreach ($sectors as $sector)
+        <section aria-labelledby="sector-{{ $loop->index }}" class="pt-10"
+                 x-data="{ scroll(dir) { $refs.track.scrollBy({ left: dir * $refs.track.clientWidth * 0.9, behavior: 'smooth' }) } }">
+            <div class="mb-4 flex items-end justify-between gap-4">
+                <h2 id="sector-{{ $loop->index }}" class="text-xl font-extrabold sm:text-2xl">
+                    Sector <span class="text-purple-700">{{ $sector['name'] }}</span>
+                </h2>
+                <div class="hidden gap-2 sm:flex">
+                    <button type="button" @click="scroll(-1)" class="grid h-9 w-9 place-items-center rounded-full border border-gray-300 hover:bg-gray-100" aria-label="Anteriores de {{ $sector['name'] }}">
+                        <x-icon name="chevron-right" class="h-4 w-4 rotate-180" />
+                    </button>
+                    <button type="button" @click="scroll(1)" class="grid h-9 w-9 place-items-center rounded-full border border-gray-300 hover:bg-gray-100" aria-label="Siguientes de {{ $sector['name'] }}">
+                        <x-icon name="chevron-right" class="h-4 w-4" />
+                    </button>
                 </div>
             </div>
+            <ul x-ref="track" class="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:gap-4 sm:px-0 [scrollbar-width:thin]">
+                @foreach ($sector['publications'] as $publication)
+                    <li class="w-[70%] shrink-0 snap-start sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:w-[calc((100%-3rem)/4)]">
+                        <x-product-card :publication="$publication" />
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endforeach
 
-            {{-- Transcripción de ejemplo --}}
-            <div class="rounded-2xl bg-white/[0.06] border border-white/15 p-5 font-mono text-sm leading-relaxed" aria-hidden="true">
-                <p class="mono-label !text-purple-300 mb-3">Transcripción de ejemplo</p>
-                <p class="text-purple-100">
-                    <span class="text-[var(--color-accent)]">SONARA:</span> ¿Cuál es el nombre de tu emprendimiento?
+    {{-- 5. Banner de la plataforma --}}
+    <section aria-labelledby="home-banner" class="mt-14 overflow-hidden rounded-3xl bg-gradient-to-br from-purple-700 to-purple-900 text-white">
+        <div class="grid grid-cols-1 gap-8 p-6 sm:p-10 lg:grid-cols-5 lg:items-center">
+            <div class="lg:col-span-3">
+                <p class="text-sm font-bold uppercase tracking-wider text-purple-100">Plataforma accesible · Voz guiada</p>
+                <h2 id="home-banner" class="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">
+                    Emprendimientos que se escuchan y se apoyan.
+                </h2>
+                <p class="mt-4 max-w-xl text-base leading-relaxed text-purple-100 sm:text-lg">
+                    SONARA conecta a emprendedores con discapacidad visual con clientes que valoran su talento.
+                    Hoy hay {{ $totalBusinesses }} {{ $totalBusinesses === 1 ? 'emprendimiento' : 'emprendimientos' }} esperándote.
                 </p>
-                <p class="mt-2 text-white">
-                    <span class="text-purple-300">TÚ:</span> Manos Creativas, hago artesanías en telar.<span class="caret-blink h-4 align-middle ml-0.5"></span>
-                </p>
-                <p class="mt-2 text-purple-100">
-                    <span class="text-[var(--color-accent)]">SONARA:</span> Perfecto, registrado. ¿En qué categoría lo ubicamos?
-                </p>
+            </div>
+            <div class="flex flex-col gap-3 lg:col-span-2">
+                <a href="{{ route('voice-registration.index') }}" class="inline-flex min-h-[3rem] items-center justify-center gap-2 rounded-full bg-white px-6 font-bold text-purple-800 hover:bg-purple-100">
+                    <x-icon name="mic" class="h-5 w-5" /> Soy emprendedor: registro por voz
+                </a>
+                <a href="{{ route('register') }}" class="inline-flex min-h-[3rem] items-center justify-center rounded-full border-2 border-white/70 px-6 font-bold text-white hover:bg-white/10">
+                    Crear cuenta para comprar
+                </a>
             </div>
         </div>
     </section>

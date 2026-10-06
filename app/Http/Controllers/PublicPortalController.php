@@ -3,37 +3,55 @@
 namespace App\Http\Controllers;
 
 use App\Models\Business;
+use App\Models\CatalogOption;
+use App\Models\CatalogType;
 use App\Models\Category;
+use App\Models\EntrepreneurProfile;
 use App\Models\Publication;
+use App\Services\Assistant\VoiceText;
 use Illuminate\Http\Request;
 
 class PublicPortalController extends Controller
 {
+    /**
+     * Home: búsqueda, categorías y sectores del admin, destacados (primero
+     * los que tienen imagen IA) y una fila por cada sector con anuncios.
+     */
     public function home()
     {
         $categories = Category::where('is_active', true)
             ->withCount('visiblePublications')
-            ->orderBy('sort_order')->take(12)->get();
+            ->orderBy('sort_order')->orderBy('name')->get();
 
-        $featured = Publication::with(['business.category', 'business.hours', 'business.entrepreneurProfile.user'])
+        $visible = fn () => Publication::with(['business.category', 'business.entrepreneurProfile'])
             ->where('status', Publication::STATUS_PUBLICADA)
-            ->whereNotNull('flyer_image')
+            ->whereHas('business', fn ($q) => $q->where('status', Business::STATUS_ACTIVO));
+
+        $featured = $visible()
+            ->orderByRaw('flyer_image IS NULL')
             ->latest('published_at')
-            ->take(6)->get();
+            ->take(8)->get();
 
-        $verified = Publication::with(['business.category', 'business.hours', 'business.entrepreneurProfile.user'])
-            ->where('status', Publication::STATUS_PUBLICADA)
-            ->whereHas('business', function ($q) {
-                $q->where('status', 'activo')->whereHas('entrepreneurProfile', fn ($p) => $p->where('verification_status', 'aprobado'));
-            })
+        // Un carrusel por sector del catálogo del admin, en su orden; los
+        // anuncios se agrupan comparando el nombre normalizado (sin tildes
+        // ni mayúsculas) y se omiten los sectores sin anuncios.
+        $bySector = $visible()
+            ->whereHas('business', fn ($q) => $q->whereNotNull('sector')->where('sector', '!=', ''))
             ->latest('published_at')
-            ->take(6)->get();
+            ->get()
+            ->groupBy(fn (Publication $p) => VoiceText::normalize($p->business->sector));
 
-        $totalBusinesses = Business::where('status', 'activo')->count();
-        $totalCategories = Category::where('is_active', true)->count();
-        $totalPublications = Publication::where('status', Publication::STATUS_PUBLICADA)->count();
+        $sectors = CatalogType::where('slug', CatalogType::SECTORES)->first()?->options
+            ->map(fn (CatalogOption $option) => [
+                'name' => $option->name,
+                'publications' => ($bySector[$option->normalized_name] ?? collect())->take(12),
+            ])
+            ->filter(fn ($sector) => $sector['publications']->isNotEmpty())
+            ->values() ?? collect();
 
-        return view('public.home', compact('categories', 'featured', 'verified', 'totalBusinesses', 'totalCategories', 'totalPublications'));
+        $totalBusinesses = Business::where('status', Business::STATUS_ACTIVO)->count();
+
+        return view('public.home', compact('categories', 'featured', 'sectors', 'totalBusinesses'));
     }
 
     public function explore(Request $request)
@@ -138,6 +156,21 @@ class PublicPortalController extends Controller
         $published = $business->publishedPublications()->get();
 
         return view('public.business', compact('business', 'published'));
+    }
+
+    /** Perfil público del emprendedor con todos sus emprendimientos publicados. */
+    public function entrepreneur(EntrepreneurProfile $profile)
+    {
+        abort_unless($profile->user?->isEntrepreneur() && $profile->user->isActive(), 404);
+
+        $businesses = $profile->businesses()
+            ->with(['category', 'adPublication', 'entrepreneurProfile'])
+            ->where('status', Business::STATUS_ACTIVO)
+            ->whereHas('publishedPublications')
+            ->latest()
+            ->get();
+
+        return view('public.entrepreneur', compact('profile', 'businesses'));
     }
 
     public function publication(Publication $publication)

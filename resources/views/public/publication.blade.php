@@ -9,6 +9,14 @@
         ->merge($publication->images->map(fn ($img) => ['path' => $img->path]))
         ->values();
     $altText = 'Imagen de '.$publication->name.', '.($publication->business->category?->name ?? 'emprendimiento').' en '.$publication->business->location_summary;
+    $contact = $publication->business->whatsapp ?: $publication->business->phone;
+    $shareText = collect([
+        $publication->name.' — '.$publication->business->name,
+        $publication->description,
+        'Precio: '.$publication->price_display,
+        'Horario: '.$publication->business->schedule_summary,
+        $contact ? 'Contacto: '.$contact : null,
+    ])->filter()->implode("\n");
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ activeImg: 0 }">
@@ -27,10 +35,10 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {{-- Galería --}}
         <div class="lg:sticky lg:top-24 self-start space-y-3">
-            <div class="card overflow-hidden aspect-square">
+            <div class="card overflow-hidden aspect-[3/4] max-h-[80vh] mx-auto w-full">
                 @if ($gallery->isNotEmpty())
                     @foreach ($gallery as $i => $img)
-                        <img x-show="activeImg === {{ $i }}" src="{{ asset($img['path']) }}" alt="{{ $altText }}" class="w-full h-full object-cover">
+                        <img x-show="activeImg === {{ $i }}" src="{{ asset($img['path']) }}" alt="{{ $altText }}" class="w-full h-full object-contain bg-gray-50">
                     @endforeach
                 @else
                     <div class="w-full h-full grid place-items-center" style="background: var(--color-lavender); color: var(--color-primary)" aria-hidden="true">
@@ -56,7 +64,7 @@
         <div class="space-y-6">
             <div class="flex flex-wrap items-center gap-2">
                 @if ($publication->business?->entrepreneurProfile?->isVerified())
-                    <p class="badge badge-approved" aria-label="Emprendimiento verificado">
+                    <p class="badge badge-verified" aria-label="Emprendimiento verificado">
                         <x-icon name="verified" class="w-4 h-4" /> Verificado
                     </p>
                 @endif
@@ -137,7 +145,14 @@
                         <x-icon name="chat" class="w-5 h-5" /> WhatsApp
                     </a>
                 @endif
+                <x-share-button :title="$publication->name" :text="$shareText"
+                                :url="route('public.publication', $publication->slug)"
+                                :image="$publication->flyer_image ? asset($publication->flyer_image) : null" />
             </div>
+
+            @if ($publication->business->entrepreneurProfile)
+                <x-entrepreneur-card :profile="$publication->business->entrepreneurProfile" />
+            @endif
 
             {{-- Solicitud --}}
             <section id="solicitar" aria-labelledby="request-form-title" class="card card-body !p-6 sm:!p-8 scroll-mt-24">

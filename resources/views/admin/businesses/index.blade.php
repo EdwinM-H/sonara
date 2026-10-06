@@ -3,7 +3,7 @@
 @section('panel-content')
     <x-panel-header title="Emprendimientos" subtitle="Todos los emprendimientos del portal." />
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
         <table class="table table-auto">
             <thead>
                 <tr>

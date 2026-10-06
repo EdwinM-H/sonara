@@ -39,7 +39,7 @@ class AdminRoleTest extends TestCase
     private function registerByVoice(): User
     {
         $this->getJson(route('voice-registration.start'))->assertOk();
-        foreach (['Rosa María', 'Mamani Quispe', 'Tejo chompas de alpaca', 'Cusco, San Blas', '987 654 321'] as $answer) {
+        foreach (['Rosa María', 'Mamani Quispe', '45678901', 'leve', 'no', 'Tejo chompas de alpaca', 'Cusco, San Blas', '987 654 321'] as $answer) {
             $this->postJson(route('voice-registration.process'), ['transcript' => $answer])->assertOk();
         }
         $last = $this->postJson(route('voice-registration.process'), ['transcript' => 'siete dos cero cinco'])->assertOk()->json();
@@ -70,8 +70,8 @@ class AdminRoleTest extends TestCase
         $this->assertTrue($entrepreneur->isEntrepreneur());
         $this->assertFalse($entrepreneur->isAdmin());
 
-        $this->actingAs($entrepreneur)->get(route('admin.entrepreneurs.index'))->assertForbidden();
-        $this->actingAs($admin)->get(route('entrepreneur.dashboard'))->assertForbidden();
+        $this->actingAs($entrepreneur)->get(route('admin.entrepreneurs.index'))->assertRedirect(route('login'));
+        $this->actingAs($admin)->get(route('entrepreneur.dashboard'))->assertRedirect(route('admin.dashboard'));
     }
 
     public function test_admin_cannot_use_entrepreneur_voice_login(): void
@@ -164,7 +164,7 @@ class AdminRoleTest extends TestCase
     public function test_registration_confirmation_masks_pin_on_screen(): void
     {
         $this->getJson(route('voice-registration.start'))->assertOk();
-        foreach (['Rosa María', 'Mamani Quispe', 'Tejo chompas', 'Cusco', '987654321'] as $answer) {
+        foreach (['Rosa María', 'Mamani Quispe', '45678901', 'leve', 'no', 'Tejo chompas', 'Cusco', '987654321'] as $answer) {
             $this->postJson(route('voice-registration.process'), ['transcript' => $answer]);
         }
         $last = $this->postJson(route('voice-registration.process'), ['transcript' => '7205'])->json();

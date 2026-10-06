@@ -105,8 +105,7 @@ class VoiceBusinessWallTest extends TestCase
         $this->assertSame(Business::TYPE_SERVICIO, $business->type);
         $this->assertSame('desde 20 soles la hora', $business->price_text);
         $this->assertSame('lunes a sabado de 3 a 8 de la noche', $business->schedule_text);
-        $this->assertStringContainsString("Price range: desde 20 soles la hora.
-Hours: lunes a sabado de 3 a 8 de la noche.", $business->image_prompt);
+        $this->assertStringContainsString("- Price: desde 20 soles la hora\n- Hours: lunes a sabado de 3 a 8 de la noche", $business->image_prompt);
 
         // Tarjeta del muro: precio y horario.
         $this->get(route('public.category', $this->educacion))->assertOk()
@@ -151,7 +150,9 @@ Hours: lunes a sabado de 3 a 8 de la noche.", $business->image_prompt);
         $this->assertSame(1, $visible);
 
         $this->get(route('public.categories'))->assertOk()->assertSee('<span class="badge badge-neutral">1</span>', false);
-        $this->get(route('public.home'))->assertOk()->assertSee('1 publicación');
+        $this->get(route('public.home'))->assertOk()
+            ->assertSee(route('public.category', $this->educacion), false)
+            ->assertSee('clases de matematica');
 
         $this->get(route('public.category', $this->educacion))->assertOk()->assertSee('clases de matematica');
     }

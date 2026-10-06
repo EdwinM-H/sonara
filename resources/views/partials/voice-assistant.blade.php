@@ -32,20 +32,9 @@
      aria-label="Asistente por voz de Sonara"
      class="fixed bottom-20 right-4 z-[60] lg:bottom-4">
 
-    {{-- Botón flotante --}}
-    <button type="button"
-            @click="toggle()"
-            aria-label="Asistente por voz (Alt + V)"
-            class="voice-fab"
-            :aria-expanded="open.toString()">
-        <span aria-hidden="true" x-show="!listening"><x-icon name="mic" class="w-7 h-7" /></span>
-        <span aria-hidden="true" x-show="listening" x-cloak class="voice-fab-listening" aria-label="Escuchando"></span>
-        <span class="sr-only">Asistente por voz</span>
-    </button>
-
-    {{-- Panel --}}
+    {{-- Sin botón flotante: el panel se abre con Alt+V (o "Leer página" en la barra superior). --}}
     <div x-show="open" x-cloak role="dialog" aria-label="Panel del asistente por voz"
-         class="absolute bottom-20 right-0 w-80 max-w-[90vw] rounded-2xl border border-purple-200 bg-white p-4 shadow-2xl space-y-3">
+         class="absolute bottom-0 right-0 w-80 max-w-[90vw] rounded-2xl border border-purple-200 bg-white p-4 shadow-2xl space-y-3">
         <div class="flex items-center justify-between">
             <h2 class="font-bold text-purple-900 flex items-center gap-2">
                 <span class="grid place-items-center w-8 h-8 rounded-lg bg-purple-50 text-purple-700" aria-hidden="true">

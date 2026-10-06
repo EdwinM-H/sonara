@@ -3,7 +3,7 @@
 @section('panel-content')
     <x-panel-header title="Catálogos" subtitle="Opciones que el emprendedor escucha y elige al registrar su emprendimiento por voz." />
 
-    <div class="card overflow-hidden mb-8">
+    <div class="card overflow-x-auto mb-8">
         <table class="table table-auto">
             <thead>
                 <tr>

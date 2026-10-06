@@ -3,7 +3,7 @@
 @section('panel-content')
     <x-panel-header title="Solicitudes de clientes" subtitle="Todas las solicitudes enviadas por clientes a los emprendedores." />
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
         <table class="table table-auto">
             <thead>
                 <tr>

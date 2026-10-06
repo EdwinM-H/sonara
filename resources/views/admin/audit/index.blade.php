@@ -3,7 +3,7 @@
 @section('panel-content')
     <x-panel-header title="Auditoría" subtitle="Registro de las acciones realizadas por usuarios y administradores." />
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
         <table class="table table-auto">
             <thead>
                 <tr>

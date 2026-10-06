@@ -127,7 +127,7 @@ class AdminCatalogTest extends TestCase
         $type = CatalogType::where('slug', 'sectores')->firstOrFail();
 
         $this->actingAs($this->entrepreneur)->post(route('admin.catalogs.options.store', $type), ['name' => 'Sur'])->assertForbidden();
-        $this->actingAs($this->entrepreneur)->get(route('admin.catalogs.index'))->assertForbidden();
+        $this->actingAs($this->entrepreneur)->get(route('admin.catalogs.index'))->assertRedirect(route('login'));
 
         auth()->logout();
         $this->getJson(route('api.catalogs.index'))->assertUnauthorized();

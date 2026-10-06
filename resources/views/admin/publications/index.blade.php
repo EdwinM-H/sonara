@@ -12,12 +12,12 @@
     @endphp
 
     <div class="flex flex-wrap gap-2 mb-6 text-sm">
-        <span class="badge bg-amber-100 text-amber-800">Pendientes: {{ $counts['pendiente'] }}</span>
+        <span class="badge bg-purple-100 text-purple-800">Pendientes: {{ $counts['pendiente'] }}</span>
         <span class="badge bg-green-100 text-green-800">Publicadas: {{ $counts['publicada'] }}</span>
         <span class="badge bg-red-100 text-red-800">Rechazadas: {{ $counts['rechazada'] }}</span>
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
         <table class="table table-auto">
             <thead>
                 <tr>

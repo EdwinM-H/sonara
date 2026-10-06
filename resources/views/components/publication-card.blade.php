@@ -12,7 +12,7 @@
         @endif
 
         @if ($publication->business?->entrepreneurProfile?->isVerified())
-            <p class="badge badge-approved absolute top-3 left-3 !bg-white shadow-soft" aria-label="Emprendimiento verificado">
+            <p class="badge badge-verified absolute top-3 left-3 shadow-soft" aria-label="Emprendimiento verificado">
                 <x-icon name="verified" class="w-4 h-4" /> Verificado
             </p>
         @endif

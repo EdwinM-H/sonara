@@ -14,7 +14,7 @@
             <p class="text-gray-500 text-sm mt-1">Crea tu primer emprendimiento para empezar a publicar productos y servicios.</p>
         </div>
     @else
-        <div class="card overflow-hidden">
+        <div class="card overflow-x-auto">
             <table class="table table-auto">
                 <thead>
                     <tr>

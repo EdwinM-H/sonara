@@ -15,8 +15,14 @@ class EntrepreneurProfile extends Model
     public const VERIF_APROBADO = 'aprobado';
     public const VERIF_RECHAZADO = 'rechazado';
 
+    public const GRADOS_DISCAPACIDAD = ['LEVE', 'MODERADA', 'SEVERA'];
+
     protected $fillable = [
         'user_id',
+        'dni',
+        'grado_discapacidad',
+        'tiene_carnet_conadis',
+        'numero_carnet_conadis',
         'personal_description',
         'location',
         'verification_status',
@@ -30,6 +36,7 @@ class EntrepreneurProfile extends Model
     protected function casts(): array
     {
         return [
+            'tiene_carnet_conadis' => 'boolean',
             'registered_fully_at' => 'datetime',
             'document_deadline_at' => 'datetime',
             'validation_deadline_at' => 'datetime',

@@ -13,7 +13,8 @@ use RuntimeException;
  *
  *   POST https://generativelanguage.googleapis.com/v1beta/interactions
  *   x-goog-api-key: GEMINI_API_KEY
- *   {"model": "gemini-3.1-flash-lite-image", "input": "<prompt>"}
+ *   {"model": "gemini-3.1-flash-lite-image", "input": "<prompt>",
+ *    "response_format": {"type": "image", "aspect_ratio": "9:16"}}
  *
  * La imagen llega en base64 dentro de steps[].content[] con type "image"
  * (en la práctica, image/jpeg). La clave va en la cabecera, no en la URL,
@@ -23,7 +24,16 @@ class GeminiImageGenerator
 {
     public const DIRECTORY = 'uploads/emprendimientos';
 
+    /** Vertical, como un flyer para compartir por WhatsApp o redes. */
+    public const ASPECT_RATIO = '9:16';
+
     protected const EXTENSIONS = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
+
+    /** Carpeta dentro de public/; los tests usan otra para no pisar los flyers reales. */
+    public static function directory(): string
+    {
+        return trim(config('services.gemini.directory') ?: self::DIRECTORY, '/');
+    }
 
     public static function isConfigured(): bool
     {
@@ -45,6 +55,7 @@ class GeminiImageGenerator
                 ->post(config('services.gemini.endpoint'), [
                     'model' => config('services.gemini.image_model'),
                     'input' => $prompt,
+                    'response_format' => ['type' => 'image', 'aspect_ratio' => self::ASPECT_RATIO],
                 ]);
         } catch (ConnectionException) {
             throw new RuntimeException('No se pudo conectar con Gemini (tiempo de espera o red).');
@@ -66,12 +77,12 @@ class GeminiImageGenerator
             throw new RuntimeException('Gemini devolvió una imagen inválida.');
         }
 
-        File::ensureDirectoryExists(public_path(self::DIRECTORY));
+        File::ensureDirectoryExists(public_path(self::directory()));
         $name = preg_replace('/[^A-Za-z0-9_-]/', '', $filename) ?: 'imagen';
         foreach (self::EXTENSIONS as $ext) {
-            File::delete(public_path(self::DIRECTORY."/{$name}.{$ext}")); // al reintentar, sin restos de otro formato
+            File::delete(public_path(self::directory()."/{$name}.{$ext}")); // al reintentar, sin restos de otro formato
         }
-        $path = self::DIRECTORY."/{$name}.{$extension}";
+        $path = self::directory()."/{$name}.{$extension}";
         File::put(public_path($path), $bytes);
 
         return $path;

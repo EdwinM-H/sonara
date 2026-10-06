@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SONARA â€” Asistente de voz del sitio (todas las pÃ¡ginas).
  *
  * El micrÃ³fono NUNCA se activa solo: los navegadores exigen un gesto
@@ -76,10 +76,10 @@ export function registerSiteVoice() {
             add(['inicio', 'menu principal', 'pagina principal', 'home', 'volver al inicio', 'presentacion'], 'Ir al inicio', d.navHome);
             add(['explorar', 'catalogo', 'buscar', 'emprendimientos', 'servicios'], 'Explorar emprendimientos', d.navExplore);
             add(['categorias', 'categorias por voz'], 'Ver categorÃ­as', d.navCategories);
-            add(['registrarme', 'crear cuenta', 'registro', 'ser emprendedor'], 'Crear cuenta', d.navRegister);
+            add(['registrarme', 'crear cuenta', 'registro'], 'Crear cuenta', d.navRegister);
             add(['login por voz', 'ingresar por voz', 'iniciar sesion por voz', 'entrar por voz'], 'Login por voz', d.navVoiceLogin);
             add(['iniciar sesion', 'ingresar', 'entrar', 'login'], 'Iniciar sesiÃ³n', d.navLogin);
-            add(['registro por voz', 'por voz', 'hablar', 'registro hablado'], 'Registro guiado por voz', d.navVoice);
+            add(['registro por voz', 'por voz', 'hablar', 'registro hablado', 'ser emprendedor', 'soy emprendedor'], 'Registro guiado por voz', d.navVoice);
             add(['mi perfil', 'perfil'], 'Mi perfil', d.navProfile);
             add(['notificaciones', 'avisos'], 'Mis notificaciones', d.navNotifications);
             add(['mi panel', 'panel', 'mi cuenta', 'dashboard'], 'Mi panel', d.navPanel);
@@ -97,7 +97,7 @@ export function registerSiteVoice() {
         // ---------------------------------------------------------------
         // Saludo (una vez por sesión): informa cómo activar el asistente,
         // pero NUNCA abre el micrófono por sí solo — eso requiere que el
-        // usuario pulse el botón flotante o presione Alt+V.
+        // usuario presione Alt+V.
         // ---------------------------------------------------------------
         greet() {
             if (document.visibilityState === 'hidden') return;

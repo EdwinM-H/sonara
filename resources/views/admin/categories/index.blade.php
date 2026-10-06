@@ -8,7 +8,7 @@
         @endslot
     </x-panel-header>
 
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
         <table class="table table-auto">
             <thead>
                 <tr>

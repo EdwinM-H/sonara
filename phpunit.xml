@@ -32,6 +32,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="GEMINI_API_KEY" value=""/>
+        <env name="GEMINI_IMAGE_DIRECTORY" value="uploads/test-emprendimientos"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>
 </phpunit>

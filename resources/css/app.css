@@ -26,14 +26,14 @@
         --color-muted: #6F6390;
         --color-muted-2: #8A7FB0;
 
-        --color-accent-2: #d97706;
-        --color-accent-soft: #fef3c7;
+        --color-accent-2: #5B2BD9;
+        --color-accent-soft: #EAE1FD;
         --color-success: #166534;
         --color-success-soft: #EAFBE7;
         --color-success-border: #86D68F;
-        --color-warning: #854D0E;
-        --color-warning-soft: #FFF8E5;
-        --color-warning-border: #E8C877;
+        --color-warning: #391A86;
+        --color-warning-soft: #EAE1FD;
+        --color-warning-border: #9A72EB;
         --color-error: #9F1239;
         --color-error-soft: #FFF1F1;
         --color-error-border: #F2A8B4;
@@ -54,7 +54,7 @@
         --shadow-fab: 0 10px 24px rgba(91, 43, 217, 0.35);
         --shadow-btn: 0 14px 30px -14px rgba(91, 43, 217, 0.95);
 
-        --color-hero-glow-1: rgba(217, 119, 6, 0.16);
+        --color-hero-glow-1: rgba(154, 114, 235, 0.16);
         --color-hero-glow-2: rgba(91, 43, 217, 0.18);
         --color-surface-alt: #fbfafc;
         --color-primary-ink: #2E1065;
@@ -255,6 +255,11 @@
     .table tbody tr:hover {
         background-color: var(--color-lavender);
     }
+    /* En móvil la tabla conserva un ancho legible y su contenedor
+       (overflow-x-auto) se desplaza en horizontal. */
+    @media (max-width: 767px) {
+        .table { min-width: 640px; }
+    }
 
     /* ---------- Tarjetas ---------- */
     .card {
@@ -358,7 +363,11 @@
         background-color: #FFF1F1; color: #9F1239; border: 1.5px solid #F2A8B4;
     }
     .badge-review {
-        background-color: #FFF8E5; color: #854D0E; border: 1.5px solid #E8C877;
+        background-color: #EAE1FD; color: #391A86; border: 1.5px dashed #9A72EB;
+    }
+    /* Emprendedor o emprendimiento verificado (morado de marca). */
+    .badge-verified {
+        background-color: #5B2BD9; color: #ffffff; border: 1.5px solid #5B2BD9;
     }
     .badge-draft {
         background-color: #F4F0FF; color: #3D1596; border: 1.5px solid #BFA9F0;
@@ -428,7 +437,7 @@
 
     /* ---------- Navegación móvil inferior ---------- */
     .nav-bottom {
-        @apply fixed bottom-0 inset-x-0 z-50;
+        @apply fixed bottom-0 inset-x-0 z-50 flex;
         background-color: var(--color-ink);
         border-top: 1.5px solid rgba(255,255,255,0.08);
         padding-bottom: env(safe-area-inset-bottom);
@@ -589,7 +598,7 @@
     body.high-contrast .badge-success,
     body.high-contrast .badge-approved { background-color: #052e16; color: #86efac; }
     body.high-contrast .badge-warning,
-    body.high-contrast .badge-review { background-color: #451a03; color: #fcd34d; }
+    body.high-contrast .badge-review { background-color: #2E1065; color: #D3C2FB; }
     body.high-contrast .badge-error,
     body.high-contrast .badge-rejected { background-color: #450a0a; color: #fecaca; }
     body.high-contrast .badge-info,

@@ -14,7 +14,7 @@
             <p class="text-gray-500 text-sm mt-1">Crea una publicación, genera su flyer con IA y solicita su aprobación.</p>
         </div>
     @else
-        <div class="card overflow-hidden">
+        <div class="card overflow-x-auto">
             <table class="table table-auto">
                 <thead>
                     <tr>

@@ -10,6 +10,7 @@ use App\Http\Controllers\AssistanceController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\AssistedRegistrationController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/estadisticas', [StatsController::class, 'index'])->name('stats');
     Route::post('/publicaciones/{publication}/cambiar-estado', [PublicationReviewController::class, 'changeStatus'])->name('publications.changeStatus');
 
     // Usuarios

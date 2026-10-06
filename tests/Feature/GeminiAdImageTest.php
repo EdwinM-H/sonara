@@ -54,7 +54,7 @@ class GeminiAdImageTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (glob(public_path(GeminiImageGenerator::DIRECTORY.'/emprendimiento-*')) as $file) {
+        foreach (glob(public_path(GeminiImageGenerator::directory().'/emprendimiento-*')) as $file) {
             File::delete($file);
         }
         parent::tearDown();
@@ -114,20 +114,50 @@ class GeminiAdImageTest extends TestCase
         $prompt = app(AdPromptBuilder::class)->build(Business::firstOrFail());
 
         $this->assertSame(implode("\n", [
-            'Create a professional and vibrant advertisement image for a business called "clases de matematica".',
-            'Category: Educación. Sector: centro. Location: calle plateros 340.',
-            'Description: clases particulares para escolares.',
-            'Price range: desde 20 soles la hora.',
-            'Hours: lunes a sabado de 3 a 8.',
-            'Keywords: algebra, geometria.',
-            'Style: modern, clean, eye-catching, suitable for a business directory listing.',
-            'Do not include any text or logos in the image.',
+            'Design a professional, eye-catching advertising flyer for a business.',
+            '',
+            'BUSINESS INFORMATION TO INCLUDE IN THE FLYER:',
+            '- Business name: "clases de matematica" (make this the most prominent text, large and bold)',
+            '- Category: Educación',
+            '- Sector / Zone: centro — calle plateros 340',
+            '- Description: "clases particulares para escolares" (include as a short tagline or subtitle)',
+            '- Price: desde 20 soles la hora',
+            '- Hours: lunes a sabado de 3 a 8',
+            '- WhatsApp: 984111222',
+            '- Keywords / tags: algebra, geometria',
+            '',
+            'DESIGN REQUIREMENTS:',
+            '- Style: modern, vibrant, professional — like a real printed or digital flyer',
+            '- Layout: structured with clear visual hierarchy (title at top, details in middle, contact at bottom)',
+            '- Include decorative design elements, shapes, or backgrounds that match the category "Educación"',
+            '- Use bold colors and clean typography',
+            '- Add a subtle "WhatsApp" label next to the phone number',
+            '- Make it look like it was designed by a professional graphic designer',
+            '- Format: vertical/portrait orientation, suitable for sharing on social media or WhatsApp',
+            '- Do NOT add any placeholder text, watermarks, or lorem ipsum',
+            '- All text in the flyer must be exactly as provided above, no invented information',
         ]), $prompt);
 
-        $empty = new Business(['name' => 'x', 'description' => 'y']);
-        $this->assertStringContainsString('Price range: to be consulted.', app(AdPromptBuilder::class)->build($empty));
-        $this->assertStringContainsString('Hours: available on request.', app(AdPromptBuilder::class)->build($empty));
-        $this->assertStringContainsString('Keywords: none.', app(AdPromptBuilder::class)->build($empty));
+        // Sin datos opcionales: valores en español para el flyer y sin líneas vacías de WhatsApp/etiquetas.
+        $empty = app(AdPromptBuilder::class)->build(new Business(['name' => 'x', 'description' => 'y']));
+        $this->assertStringContainsString('- Price: Consultar precio', $empty);
+        $this->assertStringContainsString('- Hours: Consultar horario', $empty);
+        $this->assertStringNotContainsString('WhatsApp:', $empty);
+        $this->assertStringNotContainsString('Keywords', $empty);
+        $this->assertStringContainsString('- Do not show any phone number', $empty);
+    }
+
+    // El diseño se orienta según el rubro: la categoría entra en el prompt.
+    public function test_prompt_varies_with_category(): void
+    {
+        $comida = Category::create(['name' => 'Comida', 'slug' => 'comida', 'is_active' => true]);
+        $a = new Business(['name' => 'a', 'description' => 'd']);
+        $a->setRelation('category', $this->educacion);
+        $b = new Business(['name' => 'b', 'description' => 'd']);
+        $b->setRelation('category', $comida);
+
+        $this->assertStringContainsString('match the category "Educación"', app(AdPromptBuilder::class)->build($a));
+        $this->assertStringContainsString('match the category "Comida"', app(AdPromptBuilder::class)->build($b));
     }
 
     // 3, 4, 5, 6. Gemini → imagen válida → archivo en public/uploads → URL en BD → tarjeta del muro.
@@ -145,19 +175,20 @@ class GeminiAdImageTest extends TestCase
             && $r->hasHeader('x-goog-api-key', self::KEY)
             && ! str_contains($r->url(), self::KEY)
             && $r['model'] === 'gemini-3.1-flash-lite-image'
-            && $r['input'] === $business->image_prompt);
+            && $r['input'] === $business->image_prompt
+            && $r['response_format'] === ['type' => 'image', 'aspect_ratio' => '9:16']);
 
-        $file = public_path('uploads/emprendimientos/emprendimiento-'.$business->id.'.jpg');
+        $file = public_path(GeminiImageGenerator::directory().'/emprendimiento-'.$business->id.'.jpg');
         $this->assertFileExists($file);
         $this->assertSame('image/jpeg', getimagesize($file)['mime']);
 
-        $this->assertSame(asset('uploads/emprendimientos/emprendimiento-'.$business->id.'.jpg'), $business->image_url);
+        $this->assertSame(asset(GeminiImageGenerator::directory().'/emprendimiento-'.$business->id.'.jpg'), $business->image_url);
         $this->assertFalse($business->image_pending);
-        $this->assertSame('uploads/emprendimientos/emprendimiento-'.$business->id.'.jpg', $business->adPublication->flyer_image);
+        $this->assertSame(GeminiImageGenerator::directory().'/emprendimiento-'.$business->id.'.jpg', $business->adPublication->flyer_image);
 
         auth()->logout();
         $this->get(route('public.category', $this->educacion))->assertOk()
-            ->assertSee(asset('uploads/emprendimientos/emprendimiento-'.$business->id.'.jpg'), false);
+            ->assertSee(asset(GeminiImageGenerator::directory().'/emprendimiento-'.$business->id.'.jpg'), false);
     }
 
     // 7. Si Gemini falla, el emprendimiento se guarda y publica sin imagen.
@@ -184,7 +215,7 @@ class GeminiAdImageTest extends TestCase
         $business->refresh();
         $this->assertFalse($business->image_pending);
         $this->assertNotNull($business->image_url);
-        $this->assertSame('uploads/emprendimientos/emprendimiento-'.$business->id.'.jpg', $business->adPublication->flyer_image);
+        $this->assertSame(GeminiImageGenerator::directory().'/emprendimiento-'.$business->id.'.jpg', $business->adPublication->flyer_image);
     }
 
     public function test_response_without_image_is_a_failure(): void

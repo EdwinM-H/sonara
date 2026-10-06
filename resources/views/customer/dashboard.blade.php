@@ -5,7 +5,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <x-stat-card label="Solicitudes enviadas" :value="$stats['requests']" icon="clipboard" />
-        <x-stat-card label="Pendientes" :value="$stats['pending']" icon="clock" accent="text-amber-700" />
+        <x-stat-card label="Pendientes" :value="$stats['pending']" icon="clock" accent="text-purple-700" />
         <x-stat-card label="Completadas" :value="$stats['completed']" icon="check-circle" accent="text-green-700" />
     </div>
 

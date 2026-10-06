@@ -52,7 +52,8 @@
                 @endforeach
             </nav>
 
-            {{-- Búsqueda escritorio --}}
+            {{-- Búsqueda escritorio (el home tiene su propia barra grande) --}}
+            @unless (request()->routeIs('public.home'))
             <form method="GET" action="{{ route('public.explore') }}" class="hidden md:flex flex-1 max-w-xl mx-auto"
                   role="search" aria-label="Buscar en SONARA">
                 <div class="input-group w-full">
@@ -61,6 +62,9 @@
                            class="input-text" aria-label="Buscar en SONARA">
                 </div>
             </form>
+            @else
+            <div class="flex-1"></div>
+            @endunless
 
             <div class="flex items-center gap-1 ml-auto">
                 @if ($user)
@@ -113,12 +117,14 @@
         </div>
 
         {{-- Búsqueda móvil --}}
+        @unless (request()->routeIs('public.home'))
         <form method="GET" action="{{ route('public.explore') }}" class="md:hidden pb-3 -mt-1" role="search" aria-label="Buscar en SONARA">
             <div class="input-group">
                 <span class="input-icon"><x-icon name="search" /></span>
                 <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar en SONARA…" class="input-text" aria-label="Buscar en SONARA">
             </div>
         </form>
+        @endunless
     </div>
 
     {{-- Menú móvil --}}
@@ -139,11 +145,18 @@
                     @if ($unread > 0)<span class="badge badge-error">{{ $unread }}</span>@endif
                 </a>
             @else
-                <a href="{{ route('voice-registration.index') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-gray-800 hover:bg-purple-50">
-                    <x-icon name="mic" class="w-5 h-5 text-purple-700" /> Registro asistido por voz
-                </a>
                 <a href="{{ route('login') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-gray-800 hover:bg-purple-50">
                     <x-icon name="user" class="w-5 h-5 text-purple-700" /> Iniciar sesión
+                </a>
+                <a href="{{ route('register') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-gray-800 hover:bg-purple-50">
+                    <x-icon name="user" class="w-5 h-5 text-purple-700" /> Crear cuenta
+                </a>
+                <p class="px-3 pt-3 text-xs font-bold uppercase tracking-wide text-gray-500">Emprendedores</p>
+                <a href="{{ route('voice-registration.index') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-gray-800 hover:bg-purple-50">
+                    <x-icon name="mic" class="w-5 h-5 text-purple-700" /> Registro por voz
+                </a>
+                <a href="{{ route('voice-login.index') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-gray-800 hover:bg-purple-50">
+                    <x-icon name="mic" class="w-5 h-5 text-purple-700" /> Ingresar por voz
                 </a>
             @endif
         </nav>

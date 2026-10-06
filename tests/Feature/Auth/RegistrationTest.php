@@ -26,7 +26,6 @@ class RegistrationTest extends TestCase
     public function test_new_customer_can_register(): void
     {
         $response = $this->post('/register', [
-            'role' => 'customer',
             'first_name' => 'Test',
             'last_name' => 'User',
             'email' => 'test@example.com',
@@ -42,16 +41,15 @@ class RegistrationTest extends TestCase
         $this->assertTrue(auth()->user()->hasRole('customer'));
     }
 
-    public function test_new_entrepreneur_can_register(): void
+    public function test_register_never_creates_entrepreneurs(): void
     {
-        $category = \App\Models\Category::create([
-            'name' => 'Masajes',
-            'slug' => 'masajes',
-            'is_active' => true,
-            'sort_order' => 1,
-        ]);
+        $this->get('/register')->assertOk()
+            ->assertDontSee('name="role"', false)
+            ->assertDontSee('business_name', false)
+            ->assertSee(route('voice-registration.index'), false);
 
-        $response = $this->post('/register', [
+        // Aunque se fuerce el campo, la cuenta es de cliente.
+        $this->post('/register', [
             'role' => 'entrepreneur',
             'first_name' => 'Ana',
             'last_name' => 'Roca',
@@ -59,27 +57,11 @@ class RegistrationTest extends TestCase
             'phone' => '999888777',
             'password' => 'password12',
             'password_confirmation' => 'password12',
-            'category_id' => $category->id,
             'business_name' => 'Masajes Ana',
-            'business_description' => 'Spa y masajes',
-        ]);
+        ])->assertRedirect(route('public.home', absolute: false));
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('entrepreneur.dashboard', absolute: false));
-
-        $this->assertDatabaseHas('businesses', ['name' => 'Masajes Ana']);
-        $this->assertTrue(auth()->user()->hasRole('entrepreneur'));
-    }
-
-    public function test_role_is_required(): void
-    {
-        $this->post('/register', [
-            'first_name' => 'Test',
-            'last_name' => 'User',
-            'email' => 'test@example.com',
-            'phone' => '999888777',
-            'password' => 'password12',
-            'password_confirmation' => 'password12',
-        ])->assertSessionHasErrors('role');
+        $this->assertTrue(auth()->user()->hasRole('customer'));
+        $this->assertFalse(auth()->user()->hasRole('entrepreneur'));
+        $this->assertDatabaseMissing('businesses', ['name' => 'Masajes Ana']);
     }
 }

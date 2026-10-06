@@ -19,7 +19,7 @@
         <div class="h-28 sm:h-36 relative overflow-hidden" style="background-color: var(--color-primary-deep)" aria-hidden="true">
             <div class="absolute -top-10 -right-10 w-56 h-56 rounded-full opacity-30 blur-3xl" style="background: var(--color-primary)"></div>
             @if ($business->entrepreneurProfile?->isVerified())
-                <p class="badge badge-approved !bg-white mt-4 ml-4 shadow-sm w-fit relative" aria-label="Emprendedor verificado">
+                <p class="badge badge-verified mt-4 ml-4 shadow-sm w-fit relative" aria-label="Emprendedor verificado">
                     <x-icon name="verified" class="w-4 h-4" /> Emprendedor verificado
                 </p>
             @endif
@@ -88,6 +88,19 @@
                             <x-icon name="clipboard" class="w-5 h-5" /> Copiar número
                         </button>
                     @endif
+                    @php
+                        $flyer = $business->adPublication?->flyer_image;
+                        $contact = $business->whatsapp ?: $business->phone;
+                        $shareText = collect([
+                            $business->name,
+                            $business->description,
+                            'Precio: '.($business->display_price !== null ? ($business->currency === 'PEN' ? 'S/' : $business->currency).' '.$business->display_price : ($business->price_text ?: 'Precio a consultar')),
+                            'Horario: '.$business->schedule_summary,
+                            $contact ? 'Contacto: '.$contact : null,
+                        ])->filter()->implode("\n");
+                    @endphp
+                    <x-share-button :title="$business->name" :text="$shareText" :url="route('public.business', $business)"
+                                    :image="$flyer ? asset($flyer) : null" class="[&_button]:w-full [&_button]:justify-start" />
                     @if ($business->contact_email)
                         <p class="text-sm text-gray-600 pt-2 flex items-start gap-1.5">
                             <x-icon name="user" class="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
@@ -121,6 +134,10 @@
             @endif
         </div>
     </div>
+
+    @if ($business->entrepreneurProfile)
+        <x-entrepreneur-card :profile="$business->entrepreneurProfile" class="mb-10" />
+    @endif
 
     {{-- Publicaciones --}}
     <section aria-labelledby="business-publicaciones">

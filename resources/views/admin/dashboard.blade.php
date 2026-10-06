@@ -37,8 +37,8 @@
         <x-stat-card label="Emprendimientos" :value="$stats['businesses']" icon="tag" />
         <x-stat-card label="Publicaciones" :value="$stats['publications']" icon="box" />
         <x-stat-card label="Solicitudes" :value="$stats['requests']" icon="clipboard" />
-        <x-stat-card label="Verif. pendientes" :value="$stats['pending_verifications']" icon="document" accent="text-amber-700" />
-        <x-stat-card label="Asistencia" :value="$stats['assistance']" icon="chat" accent="text-amber-700" />
+        <x-stat-card label="Verif. pendientes" :value="$stats['pending_verifications']" icon="document" accent="text-purple-700" />
+        <x-stat-card label="Asistencia" :value="$stats['assistance']" icon="chat" accent="text-purple-700" />
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -189,7 +189,8 @@
             @endforeach
         </div>
 
-        <table class="table mt-6">
+        <div class="overflow-x-auto mt-6">
+        <table class="table">
             <caption class="sr-only">Tabla equivalente al gráfico: nuevas cuentas registradas por día</caption>
             <thead>
                 <tr>
@@ -202,6 +203,7 @@
                 </tr>
             </tbody>
         </table>
+        </div>
     </section>
 
     {{-- Auditoría --}}

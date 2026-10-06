@@ -10,7 +10,7 @@
             <p class="text-gray-500 text-sm mt-1">Los usuarios pedirán ayuda aquí cuando la necesiten.</p>
         </div>
     @else
-        <div class="card overflow-hidden">
+        <div class="card overflow-x-auto">
             <table class="table table-auto">
                 <thead>
                     <tr>

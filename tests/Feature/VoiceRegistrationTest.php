@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
-/** Registro de emprendedor por voz: 6 campos, normalización, PIN hasheado y paso al login. */
+/** Registro de emprendedor por voz: campos en orden (CONADIS condicional), normalización, PIN hasheado y paso al login. */
 class VoiceRegistrationTest extends TestCase
 {
     use RefreshDatabase;
@@ -39,6 +39,10 @@ class VoiceRegistrationTest extends TestCase
         return [
             $this->say('Rosa María'),
             $this->say('Mamani Quispe.'),
+            $this->say('cuatro cinco seis siete 8 9 0 1'),
+            $this->say('Moderada'),
+            $this->say('Sí, claro'),
+            $this->say('uno dos tres cuatro cinco'),
             $this->say('Tejo chompas de alpaca desde hace veinte años.'),
             $this->say('Cusco, San Blas'),
             $this->say('987 654 321'),
@@ -53,21 +57,20 @@ class VoiceRegistrationTest extends TestCase
             ->assertSee('data-mode="register"', false);
     }
 
-    public function test_asks_exactly_the_six_fields_in_order(): void
+    public function test_asks_the_fields_in_order_skipping_conadis_number_when_no(): void
     {
         $first = $this->getJson(route('voice-registration.start'))->assertOk()->json();
         $this->assertSame('question', $first['type']);
         $this->assertSame('nombres', $first['field']);
-        $this->assertSame(6, $first['total']);
+        $this->assertSame(9, $first['total'], 'Sin carnet CONADIS son nueve preguntas.');
         $this->assertStringContainsString('pitido', $first['speak']);
 
         $fields = [$first['field']];
-        foreach (['rosa', 'mamani', 'tejo chompas', 'cusco', '987654321'] as $answer) {
+        foreach (['rosa', 'mamani', '45678901', 'leve', 'no', 'tejo chompas', 'cusco', '987654321'] as $answer) {
             $fields[] = $this->say($answer)['field'];
         }
 
-        $this->assertSame(['nombres', 'apellidos', 'sobre_mi', 'ubicacion', 'telefono_whatsapp', 'pin'], $fields);
-        $this->assertSame(array_keys(VoiceAssistantService::STEPS), $fields);
+        $this->assertSame(['nombres', 'apellidos', 'dni', 'grado_discapacidad', 'tiene_carnet_conadis', 'sobre_mi', 'ubicacion', 'telefono_whatsapp', 'pin'], $fields);
     }
 
     public function test_full_registration_creates_account_and_redirects_to_login(): void
@@ -93,6 +96,10 @@ class VoiceRegistrationTest extends TestCase
         $this->assertSame('987654321', $user->phone);
         $this->assertSame('tejo chompas de alpaca desde hace veinte anos', $user->entrepreneurProfile->personal_description);
         $this->assertSame('cusco san blas', $user->entrepreneurProfile->location);
+        $this->assertSame('45678901', $user->entrepreneurProfile->dni);
+        $this->assertSame('MODERADA', $user->entrepreneurProfile->grado_discapacidad);
+        $this->assertTrue($user->entrepreneurProfile->tiene_carnet_conadis);
+        $this->assertSame('12345', $user->entrepreneurProfile->numero_carnet_conadis);
 
         // PIN: nunca en texto plano.
         $raw = $user->getRawOriginal('voice_pin');
@@ -126,7 +133,7 @@ class VoiceRegistrationTest extends TestCase
     public function test_phone_accepts_only_digits(): void
     {
         $this->getJson(route('voice-registration.start'));
-        foreach (['rosa', 'mamani', 'tejo', 'cusco'] as $a) {
+        foreach (['rosa', 'mamani', '45678901', 'leve', 'no', 'tejo', 'cusco'] as $a) {
             $this->say($a);
         }
 
@@ -142,7 +149,7 @@ class VoiceRegistrationTest extends TestCase
     public function test_pin_requires_exactly_four_digits(): void
     {
         $this->getJson(route('voice-registration.start'));
-        foreach (['rosa', 'mamani', 'tejo', 'cusco', '987654321'] as $a) {
+        foreach (['rosa', 'mamani', '45678901', 'leve', 'no', 'tejo', 'cusco', '987654321'] as $a) {
             $this->say($a);
         }
 
@@ -190,5 +197,89 @@ class VoiceRegistrationTest extends TestCase
         $step = $this->say('cancelar');
         $this->assertSame('exited', $step['type']);
         $this->assertFalse(app(VoiceAssistantService::class)->hasSession());
+    }
+
+    private function reachConadis(): void
+    {
+        $this->getJson(route('voice-registration.start'));
+        foreach (['rosa', 'mamani', '45678901', 'severa'] as $a) {
+            $this->say($a);
+        }
+    }
+
+    public function test_disability_grade_only_accepts_the_three_options(): void
+    {
+        $this->getJson(route('voice-registration.start'));
+        foreach (['rosa', 'mamani', '45678901'] as $a) {
+            $this->say($a);
+        }
+
+        foreach (['alta', 'no se', 'leve o moderada', ''] as $bad) {
+            $step = $this->postJson(route('voice-registration.process'), ['transcript' => $bad ?: 'mmm'])->json();
+            $this->assertSame('grado_discapacidad', $step['field']);
+            $this->assertStringContainsString('LEVE, MODERADA o SEVERA', $step['speak'], 'Debe repetir la pregunta con las opciones.');
+        }
+
+        $this->assertSame('tiene_carnet_conadis', $this->say('Es moderado')['field']);
+        $this->assertSame('MODERADA', app(VoiceAssistantService::class)->data()['grado_discapacidad']);
+    }
+
+    public function test_conadis_yes_no_variants(): void
+    {
+        foreach (['sí' => true, 'Si' => true, 'claro' => true, 'sí tengo' => true, 'no' => false, 'negativo' => false, 'no tengo' => false, 'claro que no' => false] as $said => $expected) {
+            $this->assertSame($expected, VoiceAssistantService::parseYesNo($said), $said);
+        }
+        $this->assertNull(VoiceAssistantService::parseYesNo('tal vez'));
+
+        $this->reachConadis();
+        $step = $this->say('tal vez');
+        $this->assertSame('tiene_carnet_conadis', $step['field']);
+        $this->assertStringContainsString('Diga SÍ o NO', $step['speak']);
+    }
+
+    public function test_conadis_no_skips_number_and_saves_null(): void
+    {
+        $this->reachConadis();
+        $this->assertSame('sobre_mi', $this->say('negativo')['field']);
+
+        foreach (['tejo', 'cusco', '987654321'] as $a) {
+            $this->say($a);
+        }
+        $this->assertSame('registered', $this->say('1234')['type']);
+
+        $profile = User::firstOrFail()->entrepreneurProfile;
+        $this->assertSame('SEVERA', $profile->grado_discapacidad);
+        $this->assertFalse($profile->tiene_carnet_conadis);
+        $this->assertNull($profile->numero_carnet_conadis);
+    }
+
+    public function test_conadis_yes_asks_number_and_back_from_next_question_returns_to_it(): void
+    {
+        $this->reachConadis();
+        $step = $this->say('si');
+        $this->assertSame('numero_carnet_conadis', $step['field']);
+        $this->assertSame(10, $step['total']);
+
+        $this->assertSame('sobre_mi', $this->say('cero cero siete siete')['field']);
+        $this->assertSame('numero_carnet_conadis', $this->say('atrás')['field']);
+    }
+
+    public function test_dni_must_be_digits_and_unique(): void
+    {
+        $this->registerRosa();
+        $this->app->instance(VoiceAssistantService::class, new VoiceAssistantService('voice-reg-test-3'));
+        $this->getJson(route('voice-registration.start'));
+        $this->say('pedro');
+        $this->say('flores');
+
+        $step = $this->say('no lo se');
+        $this->assertSame('dni', $step['field']);
+        $this->assertStringContainsString('No entendí el número', $step['speak']);
+
+        $step = $this->say('45678901');
+        $this->assertSame('dni', $step['field']);
+        $this->assertStringContainsString('ya está registrado', $step['speak']);
+
+        $this->assertSame('grado_discapacidad', $this->say('4 5 6 7 8 9 0 2')['field']);
     }
 }

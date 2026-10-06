@@ -67,7 +67,7 @@
                                     <span class="text-red-700 font-semibold">✕ Rechazar</span>
                                     @break
                                 @case('suspendida')
-                                    <span class="text-orange-700 font-semibold">⏸ Suspender</span>
+                                    <span class="text-purple-700 font-semibold">⏸ Suspender</span>
                                     @break
                                 @default
                                     <span>{{ $target }}</span>

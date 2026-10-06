@@ -11,7 +11,7 @@
             <a href="{{ route('public.explore') }}" class="btn btn-primary mt-4">Explorar catálogo</a>
         </div>
     @else
-        <div class="card overflow-hidden">
+        <div class="card overflow-x-auto">
             <table class="table table-auto">
                 <thead>
                     <tr>

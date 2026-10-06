@@ -54,6 +54,7 @@ return [
         'project_number' => env('GEMINI_PROJECT_NUMBER'),
         'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/interactions',
         'timeout' => (int) env('GEMINI_TIMEOUT', 90),
+        'directory' => env('GEMINI_IMAGE_DIRECTORY', 'uploads/emprendimientos'),
     ],
 
     // Servidor externo de generación de imágenes del anuncio. Sin URL se

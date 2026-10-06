@@ -10,7 +10,7 @@
             <p class="text-gray-500 text-sm mt-1">Comparte el enlace de tu emprendimiento para recibir tus primeros pedidos.</p>
         </div>
     @else
-        <div class="card overflow-hidden">
+        <div class="card overflow-x-auto">
             <table class="table table-auto">
                 <thead>
                     <tr>
